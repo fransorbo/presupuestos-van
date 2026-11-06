@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f5f55">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Presupuestos">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>Presupuestos Van</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="barra">
+    <button type="button" class="barra-btn" id="btn-volver" hidden aria-label="Volver">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Volver</span>
+    </button>
+    <h1 id="titulo">Presupuesto</h1>
+    <button type="button" class="barra-btn icono" id="btn-config" aria-label="Configuración">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </header>
+
+  <!-- ===================== PANTALLA PRINCIPAL ===================== -->
+  <main id="vista-principal" class="vista">
+
+    <section class="card">
+      <h2>Tipo de viaje</h2>
+      <div class="seg tipos" data-v="tipoViaje" role="group" aria-label="Tipo de viaje" id="tipos-viaje">
+        <button type="button" data-valor="km"><span>Por km</span><small>A → B → C → D</small></button>
+      </div>
+      <p class="nota nota-fija" id="nota-tarifa-fija" hidden></p>
+    </section>
+
+    <section class="card">
+      <h2>Recorrido</h2>
+      <div class="punto punto-base">
+        <span class="chip">A</span>
+        <div><div class="etq">Salida</div><div id="texto-punto-a" class="direccion"></div></div>
+      </div>
+      <label class="campo">
+        <span class="etq"><span class="chip">B</span> Recogida</span>
+        <input type="text" data-v="origen" placeholder="Dirección de recogida" autocomplete="off" autocapitalize="words" enterkeyhint="next">
+        <span class="ayuda" id="ayuda-espera-incluida"></span>
+      </label>
+      <div id="paradas"></div>
+      <button type="button" class="btn-texto" id="btn-agregar-parada">+ Agregar parada</button>
+      <label class="campo">
+        <span class="etq"><span class="chip">C</span> Dejada</span>
+        <input type="text" data-v="destino" placeholder="Dirección de dejada" autocomplete="off" autocapitalize="words" enterkeyhint="done">
+      </label>
+      <div class="punto punto-base">
+        <span class="chip">D</span>
+        <div><div class="etq">Llegada (fin del recorrido)</div><div id="texto-punto-d" class="direccion"></div></div>
+      </div>
+      <div class="botones-ruta">
+        <a id="btn-maps" class="btn secundario" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          Ver ruta
+        </a>
+        <button type="button" id="btn-calcular-km" class="btn primario">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M4 15l4-8 4 6 3-4 5 6"/></svg>
+          <span>Calcular km</span>
+        </button>
+      </div>
+      <p class="aviso" id="aviso-maps" hidden></p>
+      <div class="resultado-km" id="resultado-km" hidden role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="card" id="card-km">
+      <div class="card-titulo">
+        <h2>Kilómetros</h2>
+        <div class="seg chico" data-v="modoTramos" role="group" aria-label="Forma de cargar los km">
+          <button type="button" data-valor="false">Total</button>
+          <button type="button" data-valor="true">Por tramo</button>
+        </div>
+      </div>
+      <div id="km-total">
+        <label class="campo">
+          <span class="etq">Km totales del recorrido (A → … → D)</span>
+          <span class="con-sufijo"><input type="text" inputmode="decimal" data-v="kmTotales" placeholder="0" autocomplete="off"><span class="sufijo">km</span></span>
+        </label>
+      </div>
+      <div id="km-tramos" hidden>
+        <div id="lista-tramos"></div>
+        <p class="suma-tramos">Total: <strong id="suma-tramos">0 km</strong></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Datos del viaje <span class="opcional">opcional</span></h2>
+      <div class="fila">
+        <label class="campo"><span class="etq">Fecha</span><input type="date" data-v="fecha"></label>
+        <label class="campo"><span class="etq">Hora</span><input type="time" data-v="hora"></label>
+      </div>
+      <div class="fila">
+        <label class="campo"><span class="etq">Pasajeros</span><input type="text" inputmode="numeric" data-v="pasajeros" placeholder="—" autocomplete="off"></label>
+        <div class="campo">
+          <span class="etq">Chofer</span>
+          <div class="seg" data-v="chofer" role="group" aria-label="Chofer">
+            <button type="button" data-valor="cristian">Cristian</button>
+            <button type="button" data-valor="marcelo">Marcelo</button>
+          </div>
+        </div>
+      </div>
+      <div class="interruptor">
+        <label for="por-agencia">Viaje por agencia<span class="ayuda" id="ayuda-agencia"></span></label>
+        <input id="por-agencia" type="checkbox" role="switch" class="switch" data-v="porAgencia">
+      </div>
+    </section>
+
+    <section class="card" id="card-extras">
+      <h2>Extras</h2>
+      <div class="fila">
+        <label class="campo">
+          <span class="etq">Espera adicional</span>
+          <span class="con-sufijo"><input type="text" inputmode="decimal" data-v="horasEspera" placeholder="0" autocomplete="off"><span class="sufijo">horas</span></span>
+          <span class="ayuda" id="ayuda-espera"></span>
+        </label>
+        <label class="campo">
+          <span class="etq">Hotel</span>
+          <span class="con-sufijo"><input type="text" inputmode="numeric" data-v="noches" placeholder="0" autocomplete="off"><span class="sufijo">noches</span></span>
+          <span class="ayuda" id="ayuda-hotel"></span>
+        </label>
+      </div>
+      <div class="campo">
+        <label class="etq" for="estacionamiento">Estacionamiento</label>
+        <div class="monto-moneda">
+          <input id="estacionamiento" type="text" inputmode="decimal" data-v="estacionamiento.monto" placeholder="0" autocomplete="off">
+          <div class="seg chico" data-v="estacionamiento.moneda" role="group" aria-label="Moneda del estacionamiento">
+            <button type="button" data-valor="ARS">$</button>
+            <button type="button" data-valor="USD">USD</button>
+          </div>
+        </div>
+      </div>
+      <div class="interruptor">
+        <label for="es-country">Recogida en country o barrio cerrado</label>
+        <input id="es-country" type="checkbox" role="switch" class="switch" data-v="esCountry">
+      </div>
+      <label class="campo" id="campo-country" hidden>
+        <span class="etq">Recargo country</span>
+        <span class="con-sufijo"><input type="text" inputmode="decimal" data-v="countryPorcentaje" autocomplete="off"><span class="sufijo">%</span></span>
+      </label>
+    </section>
+
+    <section class="card" id="card-moneda">
+      <h2>Moneda</h2>
+      <p class="nota" id="nota-moneda-fija" hidden>Tarifa fija: el presupuesto es siempre en USD.</p>
+      <div class="fila alinear-fin">
+        <div class="campo">
+          <span class="etq">Mostrar en</span>
+          <div class="seg" data-v="moneda" role="group" aria-label="Moneda del presupuesto">
+            <button type="button" data-valor="USD">USD</button>
+            <button type="button" data-valor="ARS">Pesos</button>
+          </div>
+        </div>
+        <label class="campo">
+          <span class="etq">Tipo de cambio</span>
+          <span class="con-sufijo prefijo"><span class="sufijo">$</span><input type="text" inputmode="decimal" data-v="tipoCambio" autocomplete="off"><span class="sufijo">/ USD</span></span>
+        </label>
+      </div>
+    </section>
+
+    <section class="card" id="resultado">
+      <h2>Presupuesto</h2>
+      <div id="avisos"></div>
+      <table class="desglose"><tbody id="desglose"></tbody></table>
+      <div class="total">
+        <span>Total</span>
+        <strong id="total">USD 0,00</strong>
+      </div>
+      <p class="equivalente" id="equivalente"></p>
+      <div class="agencia" id="agencia" hidden>
+        <div class="agencia-titulo">Solo para ustedes · no va en el mensaje</div>
+        <div class="agencia-fila"><span id="agencia-etq">Comisión agencia</span><strong id="agencia-comision"></strong></div>
+        <div class="agencia-fila"><span>Neto para ustedes</span><strong id="agencia-neto"></strong></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Mensaje para WhatsApp</h2>
+      <div class="interruptor">
+        <label for="incluir-desglose">Incluir desglose detallado</label>
+        <input id="incluir-desglose" type="checkbox" role="switch" class="switch" data-v="incluirDesglose">
+      </div>
+      <pre class="vista-previa" id="vista-previa"></pre>
+      <button type="button" class="btn primario" id="btn-copiar">Copiar texto para WhatsApp</button>
+      <a class="btn whatsapp" id="btn-whatsapp" target="_blank" rel="noopener">Abrir WhatsApp</a>
+      <button type="button" class="btn-texto peligro" id="btn-nuevo">Nuevo presupuesto</button>
+    </section>
+  </main>
+
+  <div class="barra-total" id="barra-total">
+    <button type="button" class="barra-total-monto" id="ir-resultado">
+      <span>Total</span><strong id="total-barra">USD 0,00</strong>
+    </button>
+    <button type="button" class="btn primario chico" id="btn-copiar-barra">Copiar</button>
+  </div>
+
+  <!-- ===================== CONFIGURACIÓN ===================== -->
+  <main id="vista-config" class="vista" hidden>
+    <form id="form-config" novalidate>
+      <div id="errores-config" class="errores" hidden role="alert"></div>
+
+      <section class="card">
+        <h2>Salida y llegada</h2>
+        <label class="campo"><span class="etq"><span class="chip">A</span> Salida</span>
+          <textarea rows="2" data-c="puntoA" autocapitalize="words"></textarea></label>
+        <label class="campo"><span class="etq"><span class="chip">D</span> Llegada (fin del recorrido)</span>
+          <textarea rows="3" data-c="puntoD" autocapitalize="words"></textarea></label>
+      </section>
+
+      <section class="card">
+        <h2>Precios</h2>
+        <label class="campo"><span class="etq">Precio por km</span>
+          <span class="con-sufijo prefijo"><span class="sufijo">USD</span><input type="text" inputmode="decimal" data-c="precioKmUSD" data-tipo="numero"></span></label>
+        <div class="campo"><label class="etq" for="cfg-minimo">Precio mínimo (viajes por km)</label>
+          <div class="monto-moneda">
+            <input id="cfg-minimo" type="text" inputmode="decimal" data-c="precioMinimo.monto" data-tipo="numero">
+            <div class="seg chico" data-c="precioMinimo.moneda" role="group" aria-label="Moneda del precio mínimo">
+              <button type="button" data-valor="ARS">$</button><button type="button" data-valor="USD">USD</button>
+            </div>
+          </div>
+          <span class="ayuda">Si el total da menos, se cobra este monto. 0 = sin mínimo.</span></div>
+        <label class="campo"><span class="etq">Espera adicional, por hora</span>
+          <span class="con-sufijo prefijo"><span class="sufijo">USD</span><input type="text" inputmode="decimal" data-c="esperaPorHoraUSD" data-tipo="numero"></span></label>
+        <label class="campo"><span class="etq">Hotel, por noche</span>
+          <span class="con-sufijo prefijo"><span class="sufijo">USD</span><input type="text" inputmode="decimal" data-c="hotelPorNocheUSD" data-tipo="numero"></span></label>
+      </section>
+
+      <section class="card">
+        <h2>Cálculo de km</h2>
+        <p class="nota">Servicio que usa el botón "Calcular km".</p>
+        <div class="campo"><span class="etq">Servicio</span>
+          <div class="seg" data-c="distancias.proveedor" role="group" aria-label="Servicio para calcular km">
+            <button type="button" data-valor="osm">OpenStreetMap</button><button type="button" data-valor="google">Google Maps</button>
+          </div>
+          <span class="ayuda" id="ayuda-proveedor"></span></div>
+        <label class="campo" id="campo-google-key"><span class="etq">Clave de API de Google</span>
+          <input type="text" data-c="distancias.googleApiKey" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="AIza…">
+          <span class="ayuda">Se crea en Google Cloud (ver README). Queda guardada en este celular y en el respaldo JSON.</span></label>
+      </section>
+
+      <section class="card">
+        <h2>Tarifas fijas</h2>
+        <p class="nota">Precio cerrado en USD: no se suma nada ni se aplica el mínimo.</p>
+        <div class="fila">
+          <label class="campo"><span class="etq">Hotel CABA → Ezeiza</span>
+            <span class="con-sufijo prefijo"><span class="sufijo">USD</span><input type="text" inputmode="decimal" data-c="tarifasFijas.0.usd" data-tipo="numero"></span></label>
+          <label class="campo"><span class="etq">Hotel CABA → Aeroparque</span>
+            <span class="con-sufijo prefijo"><span class="sufijo">USD</span><input type="text" inputmode="decimal" data-c="tarifasFijas.1.usd" data-tipo="numero"></span></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Agencia</h2>
+        <label class="campo"><span class="etq">Comisión de la agencia</span>
+          <span class="con-sufijo"><input type="text" inputmode="decimal" data-c="agenciaPorcentaje" data-tipo="numero"><span class="sufijo">%</span></span>
+          <span class="ayuda">No cambia el presupuesto: solo se muestra cuánto queda neto.</span></label>
+      </section>
+
+      <section class="card">
+        <h2>Peajes</h2>
+        <p class="nota">Cada cierta cantidad de km se suma un peaje. Con 0 km no se cobran peajes.</p>
+        <div class="fila">
+          <label class="campo"><span class="etq">Cada</span>
+            <span class="con-sufijo"><input type="text" inputmode="decimal" data-c="peajes.cadaKm" data-tipo="numero"><span class="sufijo">km</span></span></label>
+          <label class="campo"><span class="etq">Monto por peaje</span>
+            <input type="text" inputmode="decimal" data-c="peajes.monto" data-tipo="numero"></label>
+        </div>
+        <div class="campo"><span class="etq">Moneda del peaje</span>
+          <div class="seg" data-c="peajes.moneda" role="group" aria-label="Moneda del peaje">
+            <button type="button" data-valor="ARS">Pesos</button><button type="button" data-valor="USD">USD</button>
+          </div></div>
+        <label class="campo"><span class="etq">Redondeo</span>
+          <select data-c="peajes.redondeo">
+            <option value="floor">Solo tramos completos (hacia abajo)</option>
+            <option value="ceil">Cualquier fracción suma un peaje (hacia arriba)</option>
+          </select>
+          <span class="ayuda" id="ejemplo-peajes"></span></label>
+      </section>
+
+      <section class="card">
+        <h2>Estacionamiento</h2>
+        <p class="nota">Este monto se precarga en cada presupuesto nuevo; después se puede cambiar en el viaje.</p>
+        <div class="monto-moneda">
+          <input type="text" inputmode="decimal" data-c="estacionamiento.montoPorDefecto" data-tipo="numero" aria-label="Estacionamiento por defecto">
+          <div class="seg chico" data-c="estacionamiento.moneda" role="group" aria-label="Moneda del estacionamiento">
+            <button type="button" data-valor="ARS">$</button><button type="button" data-valor="USD">USD</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Recargos y ajustes</h2>
+        <label class="campo"><span class="etq">Recargo country / barrio cerrado (por defecto)</span>
+          <span class="con-sufijo"><input type="text" inputmode="decimal" data-c="countryPorcentaje" data-tipo="numero"><span class="sufijo">%</span></span>
+          <span class="ayuda">Habitualmente entre 5% y 10%. Se aplica sobre todo el subtotal.</span></label>
+        <label class="campo"><span class="etq">Ajuste general sobre el total</span>
+          <span class="con-sufijo"><input type="text" inputmode="decimal" data-c="ajusteGeneralPorcentaje" data-tipo="numero"><span class="sufijo">%</span></span>
+          <span class="ayuda">Por ejemplo, para actualizar todos los precios por inflación. No se muestra como línea aparte al cliente.</span></label>
+        <div class="interruptor">
+          <label for="redondeo-activo">Redondear el total</label>
+          <input id="redondeo-activo" type="checkbox" role="switch" class="switch" data-c="redondeo.activo">
+        </div>
+        <div class="fila" id="campos-redondeo">
+          <label class="campo"><span class="etq">Múltiplo en USD</span><input type="text" inputmode="decimal" data-c="redondeo.multiploUSD" data-tipo="numero"></label>
+          <label class="campo"><span class="etq">Múltiplo en pesos</span><input type="text" inputmode="decimal" data-c="redondeo.multiploARS" data-tipo="numero"></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Espera incluida</h2>
+        <p class="nota">El mensaje siempre dice que el precio incluye peajes y espera, y agrega uno de estos textos según la recogida.</p>
+        <label class="campo"><span class="etq">Si la recogida es en Ezeiza o Aeroparque</span>
+          <textarea rows="3" data-c="esperaIncluida.textoAeropuerto"></textarea></label>
+        <label class="campo"><span class="etq">Si la recogida es en otro lugar</span>
+          <textarea rows="2" data-c="esperaIncluida.textoNormal"></textarea></label>
+      </section>
+
+      <section class="card">
+        <h2>Texto de WhatsApp</h2>
+
+        <label class="campo"><span class="etq">Plantilla</span>
+          <textarea rows="12" data-c="plantillaWhatsApp" id="plantilla" spellcheck="false"></textarea></label>
+        <p class="nota">Tocá una variable para insertarla. Si todas las variables de una línea quedan vacías (por ejemplo, sin fecha), esa línea no aparece.</p>
+        <div class="variables" id="variables"></div>
+      </section>
+
+      <div class="acciones-config">
+        <button type="submit" class="btn primario">Guardar cambios</button>
+        <button type="button" class="btn secundario" id="btn-cancelar">Cancelar</button>
+      </div>
+
+      <section class="card">
+        <h2>Respaldo</h2>
+        <p class="nota">Exportá la configuración para guardarla o pasarla a otro celular.</p>
+        <button type="button" class="btn secundario" id="btn-exportar">Exportar configuración (JSON)</button>
+        <label class="btn secundario" for="input-importar">Importar configuración</label>
+        <input type="file" id="input-importar" accept="application/json,.json" hidden>
+        <button type="button" class="btn-texto peligro" id="btn-restablecer">Restablecer valores por defecto</button>
+      </section>
+      <p class="version" id="version"></p>
+    </form>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tests</title>
+<style>
+  body { font: 15px/1.5 -apple-system, system-ui, sans-serif; margin: 16px; background: #fff; color: #111; }
+  ul { list-style: none; padding: 0; } li { padding: 2px 0; white-space: pre-wrap; }
+  .ok { color: #137333; } .falla { color: #b3261e; font-weight: 600; }
+  #resumen { font-size: 18px; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>Tests de lógica</h1>
+<p id="resumen">Corriendo…</p>
+<ul id="salida"></ul>
+<script type="module">
+  import { correr } from './runner.js';
+  import './calc.test.js';
+  import './format.test.js';
+  import './maps.test.js';
+  import './config.test.js';
+  import './distancias.test.js';
+  const r = await correr(document.getElementById('salida'));
+  const p = document.getElementById('resumen');
+  p.textContent = r.resumen;
+  p.className = r.fallas.length ? 'falla' : 'ok';
+  window.resultadoTests = r;
+</script>
+</body>
+</html>
