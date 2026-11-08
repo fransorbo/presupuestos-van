@@ -309,3 +309,12 @@ label.btn { -webkit-user-select: none; user-select: none; }
 .total span.monto, .btn-redondeo span { font-size: inherit; font-weight: inherit; }
 .ajustes-total { margin-top: 12px; }
 #ayuda-ajustes { margin: 0; }
+
+/* ---------- gastos y ganancia (solo informativo) ---------- */
+.gastos-nota { margin: 0 0 6px; font-size: 13px; color: var(--suave); }
+.gastos .agencia-fila small { color: var(--suave); font-size: 12px; }
+.gastos .monto-gasto { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gastos-total { border-top: 1px solid var(--borde); margin-top: 4px; padding-top: 6px !important; }
+.gastos-ganancia strong { color: var(--acento); font-size: 17px; }
+.gastos strong.negativo { color: var(--peligro); }
+.gastos-ayuda { margin: -6px 0 14px; }

@@ -17,6 +17,15 @@ const NUMERICOS = [
   ['redondeo.multiploUSD', 'Redondeo USD'],
   ['redondeo.multiploARS', 'Redondeo ARS'],
   ['tipoCambio', 'Tipo de cambio'],
+  ['costos.choferHorasCada100Km', 'Gastos: horas de chofer cada 100 km'],
+  ['costos.choferPrecioHora', 'Gastos: precio por hora del chofer'],
+  ['costos.combustibleLitrosCada100Km', 'Gastos: litros cada 100 km'],
+  ['costos.combustiblePrecioLitro', 'Gastos: precio del litro'],
+  ['costos.peajesCada100Km', 'Gastos: peajes cada 100 km'],
+  ['costos.aceiteCadaKm', 'Gastos: aceite cada cuántos km'],
+  ['costos.aceiteCosto', 'Gastos: costo del cambio de aceite'],
+  ['costos.neumaticosCadaKm', 'Gastos: neumáticos cada cuántos km'],
+  ['costos.neumaticosCosto', 'Gastos: costo de los neumáticos'],
 ];
 
 export function obtener(obj, ruta) {

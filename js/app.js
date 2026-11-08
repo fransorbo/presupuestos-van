@@ -6,7 +6,7 @@ import { validarConfig, obtener } from './validar.js';
 import { cargarConfig, guardarConfig, restablecerConfig, cargarViaje, guardarViaje, exportarJSON, importarJSON, cacheDirecciones } from './storage.js';
 import { puntosRuta, calcularKmRuta, ErrorKm } from './distancias.js';
 
-export const VERSION_APP = '1.3.1';
+export const VERSION_APP = '1.4.0';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
@@ -139,9 +139,8 @@ function actualizar() {
 
   // Tarifa fija: no hacen falta km, extras ni moneda (siempre USD)
   const fija = r.tarifaFija;
-  $('#card-km').hidden = !!fija;
-  $('#btn-calcular-km').hidden = !!fija;
-  if (fija) $('#resultado-km').hidden = true;
+  // En las tarifas fijas los km no cambian el precio, pero sirven para calcular los gastos
+  $('#ayuda-km-fija').hidden = !fija;
   $('#card-extras').hidden = !!fija;
   $('#nota-moneda-fija').hidden = !fija;
   $('#campo-moneda').hidden = !!fija;
@@ -226,14 +225,29 @@ function actualizar() {
     $('#avisos').append(p);
   }
 
-  // Agencia: solo informativo
-  const ag = r.agencia;
-  $('#agencia').hidden = !ag;
-  if (ag) {
-    $('#agencia-etq').textContent = `Comisión agencia (${formatNumero(ag.porcentaje, 0, 2)}%)`;
-    $('#agencia-comision').textContent = `− ${formatMoneda(enMoneda(ag.comisionUSD), r.moneda)}`;
-    $('#agencia-neto').textContent = formatMoneda(enMoneda(ag.netoUSD), r.moneda);
+  // Gastos variables, ganancia y margen: solo informativo
+  const g = r.gastos;
+  $('#gastos-nota').textContent = r.km
+    ? `Aproximado para ${formatNumero(r.km, 0, 1)} km${viaje.chofer === 'marcelo' ? ', con Marcelo' : ''}${r.agencia ? ', por agencia' : ''}.`
+    : 'Cargá los km para calcular los gastos del recorrido.';
+  const contGastos = $('#gastos-lineas');
+  contGastos.innerHTML = '';
+  for (const l of g.lineas.filter((l) => Math.abs(l.usd) > 1e-9)) {
+    const fila = document.createElement('div');
+    fila.className = 'agencia-fila';
+    fila.innerHTML = '<span><span class="concepto"></span> <small></small></span><span class="monto-gasto"></span>';
+    $('.concepto', fila).textContent = l.etiqueta;
+    $('small', fila).textContent = l.detalle;
+    $('.monto-gasto', fila).textContent = formatMoneda(enMoneda(l.usd), r.moneda);
+    contGastos.append(fila);
   }
+  $('#gastos-total').textContent = `− ${formatMoneda(enMoneda(g.totalUSD), r.moneda)}`;
+  const ganancia = $('#gastos-ganancia');
+  ganancia.textContent = formatMoneda(enMoneda(g.gananciaUSD), r.moneda);
+  ganancia.classList.toggle('negativo', g.gananciaUSD < 0);
+  const margen = $('#gastos-margen');
+  margen.textContent = g.margen == null ? '—' : `${formatNumero(g.margen, 0, 1)}%`;
+  margen.classList.toggle('negativo', g.margen != null && g.margen < 0);
 
   // Ajustes a mano del total
   const red = r.redondeo;
@@ -299,6 +313,12 @@ function enlazarPrincipal() {
     const btnSeg = e.target.closest('.seg[data-v] button');
     if (btnSeg) {
       const seg = btnSeg.parentElement;
+      if (seg.dataset.v === 'tipoViaje' && viaje.tipoViaje !== btnSeg.dataset.valor) {
+        // Otro tipo de viaje (y quizás otra moneda): el redondeo y el precio a mano ya no valen
+        viaje.redondeo = '';
+        viaje.precioManual = '';
+        $('[data-v="precioManual"]').value = '';
+      }
       poner(viaje, seg.dataset.v, aValor(btnSeg.dataset.valor));
       marcarSeg(seg, btnSeg.dataset.valor);
       refrescar();
@@ -402,7 +422,9 @@ async function calcularKm() {
   if (btn.disabled) return;
   let puntos;
   try {
-    puntos = puntosRuta({ puntoA: config.puntoA, puntoD: config.puntoD, ...viaje });
+    // En una tarifa fija sin dejada escrita, se usa el aeropuerto de la tarifa
+    const destino = viaje.destino.trim() || tarifaFija(viaje, config)?.destino || '';
+    puntos = puntosRuta({ puntoA: config.puntoA, puntoD: config.puntoD, ...viaje, destino });
   } catch (e) {
     mostrarResultadoKm('error', (c) => c.append(parrafo(e.message)));
     return;
@@ -501,6 +523,11 @@ function actualizarConfigUI() {
   $('#ayuda-proveedor').textContent = google
     ? 'Da los mismos km que Google Maps. Necesita una clave de API.'
     : 'Gratis y sin clave. Los km pueden diferir un poco de Google Maps.';
+  const c = cfg.costos || {};
+  const por100 = (costo, cadaKm) => (num(cadaKm) ? (100 * num(costo)) / num(cadaKm) : 0);
+  const base100 = num(c.combustibleLitrosCada100Km) * num(c.combustiblePrecioLitro) + num(c.peajesCada100Km) + por100(c.aceiteCosto, c.aceiteCadaKm) + por100(c.neumaticosCosto, c.neumaticosCadaKm);
+  const marcelo100 = num(c.choferHorasCada100Km) * num(c.choferPrecioHora);
+  $('#ejemplo-gastos').textContent = `Cada 100 km: $ ${formatNumero(base100, 0, 0)} (+ $ ${formatNumero(marcelo100, 0, 0)} si viaja Marcelo, + ${formatNumero(num(cfg.agenciaPorcentaje), 0, 2)}% del total si es por agencia).`;
   const cada = num(cfg.peajes.cadaKm);
   $('#ejemplo-peajes').textContent = cada
     ? `Ejemplo: con 250 km se cobran ${cantidadPeajes(250, cfg.peajes)} peajes.`
@@ -519,6 +546,15 @@ const ETIQUETAS = {
   'tarifasFijas.0.usd': 'Tarifa fija Hotel → Ezeiza',
   'tarifasFijas.1.usd': 'Tarifa fija Hotel → Aeroparque',
   agenciaPorcentaje: 'Comisión de agencia',
+  'costos.choferHorasCada100Km': 'Gastos: horas de Marcelo',
+  'costos.choferPrecioHora': 'Gastos: precio hora de Marcelo',
+  'costos.combustibleLitrosCada100Km': 'Gastos: litros cada 100 km',
+  'costos.combustiblePrecioLitro': 'Gastos: precio del litro',
+  'costos.peajesCada100Km': 'Gastos: peajes',
+  'costos.aceiteCadaKm': 'Gastos: aceite cada km',
+  'costos.aceiteCosto': 'Gastos: costo aceite/service',
+  'costos.neumaticosCadaKm': 'Gastos: neumáticos cada km',
+  'costos.neumaticosCosto': 'Gastos: costo neumáticos',
   'distancias.proveedor': 'Servicio para calcular km',
   'distancias.googleApiKey': 'Clave de Google',
   'esperaIncluida.textoAeropuerto': 'Espera incluida (aeropuerto)',

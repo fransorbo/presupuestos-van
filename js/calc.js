@@ -123,8 +123,43 @@ export function calcular(viaje, config) {
   r.agencia = viaje.porAgencia
     ? { porcentaje: pctAgencia, comisionUSD: (r.totalUSD * pctAgencia) / 100, netoUSD: r.totalUSD * (1 - pctAgencia / 100) }
     : null;
+  r.gastos = calcularGastos(r, viaje, config);
   return r;
 }
+
+/**
+ * Gastos variables aproximados del viaje (solo para ustedes), ganancia neta y margen.
+ * Los costos de la configuración están en pesos y se calculan según los km del viaje.
+ * El chofer cuenta solo si viaja Marcelo; la comisión, solo si el viaje es por agencia.
+ * @returns {{ lineas: {id, etiqueta, detalle, usd}[], totalUSD, gananciaUSD, margen }}
+ *   margen: ganancia / total del presupuesto, en % (null si el total es 0)
+ */
+export function calcularGastos(r, viaje, config) {
+  const c = config.costos || {};
+  const tc = r.tipoCambio;
+  const deARS = (ars) => (tc ? ars / tc : 0);
+  const km = r.km;
+  const cada100 = km / 100;
+  const lineas = [];
+
+  if (viaje.chofer === 'marcelo') {
+    const horas = cada100 * num(c.choferHorasCada100Km);
+    lineas.push({ id: 'chofer', etiqueta: 'Marcelo', detalle: `${fmtNum(redondear1(horas))} h × $ ${formatNumero(num(c.choferPrecioHora), 0, 0)}`, usd: deARS(horas * num(c.choferPrecioHora)) });
+  }
+  const litros = cada100 * num(c.combustibleLitrosCada100Km);
+  lineas.push({ id: 'combustible', etiqueta: 'Combustible', detalle: `${fmtNum(redondear1(litros))} l × $ ${formatNumero(num(c.combustiblePrecioLitro), 0, 0)}`, usd: deARS(litros * num(c.combustiblePrecioLitro)) });
+  lineas.push({ id: 'peajes', etiqueta: 'Peajes', detalle: 'aprox.', usd: deARS(cada100 * num(c.peajesCada100Km)) });
+  const porKm = (costo, cadaKm) => (num(cadaKm) ? (km * num(costo)) / num(cadaKm) : 0);
+  lineas.push({ id: 'aceite', etiqueta: 'Aceite / service', detalle: '', usd: deARS(porKm(c.aceiteCosto, c.aceiteCadaKm)) });
+  lineas.push({ id: 'neumaticos', etiqueta: 'Neumáticos', detalle: '', usd: deARS(porKm(c.neumaticosCosto, c.neumaticosCadaKm)) });
+  if (r.agencia) lineas.push({ id: 'agencia', etiqueta: 'Comisión agencia', detalle: `${fmtNum(r.agencia.porcentaje)}%`, usd: r.agencia.comisionUSD });
+
+  const totalUSD = lineas.reduce((s, l) => s + l.usd, 0);
+  const gananciaUSD = r.totalUSD - totalUSD;
+  return { lineas, totalUSD, gananciaUSD, margen: r.totalUSD > 0 ? (gananciaUSD / r.totalUSD) * 100 : null };
+}
+
+const redondear1 = (n) => Math.round(n * 10) / 10;
 
 function calcularTarifaFija(viaje, config, fija) {
   const tc = num(viaje.tipoCambio ?? config.tipoCambio);

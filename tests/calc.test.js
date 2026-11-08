@@ -271,3 +271,34 @@ test('desglose para el cliente: reparte el ajuste general y suma el total', () =
   verdadero(!r.desgloseCliente.some((l) => l.id === 'ajuste'), 'no muestra el ajuste general');
   verdadero(!r.desgloseCliente.some((l) => l.id === 'chofer'), 'omite líneas en 0');
 });
+
+test('gastos: con los valores de la planilla, 100 km cuestan $ 109.390 (Marcelo + agencia)', () => {
+  // Presupuesto de $ 150.000 por agencia (comisión 20% = $ 30.000), como en la planilla
+  const r = calcular({ kmTotales: '100', moneda: 'ARS', tipoCambio: 1000, chofer: 'marcelo', porAgencia: true, precioManual: '150.000' }, def());
+  const g = (id) => r.gastos.lineas.find((l) => l.id === id)?.usd * 1000;
+  cerca(g('chofer'), 35000, '', 1e-6);
+  cerca(g('combustible'), 27390, '', 1e-6);
+  cerca(g('peajes'), 7000, '', 1e-6);
+  cerca(g('aceite'), 8000, '', 1e-6);
+  cerca(g('neumaticos'), 2000, '', 1e-6);
+  cerca(g('agencia'), 30000, '', 1e-6);
+  cerca(r.gastos.totalUSD * 1000, 109390, '', 1e-6);
+  cerca(r.gastos.gananciaUSD * 1000, 40610, '', 1e-6);
+  cerca(r.gastos.margen, (40610 / 150000) * 100, '', 1e-6);
+});
+
+test('gastos: sin Marcelo ni agencia no se cuentan; escalan con los km', () => {
+  const r = calcular({ kmTotales: '250', moneda: 'ARS', tipoCambio: 1000, chofer: 'cristian' }, def());
+  verdadero(!r.gastos.lineas.some((l) => l.id === 'chofer' || l.id === 'agencia'));
+  cerca(r.gastos.totalUSD * 1000, (27390 + 7000 + 8000 + 2000) * 2.5, '', 1e-6);
+  cerca(r.gastos.gananciaUSD, r.totalUSD - r.gastos.totalUSD, '', 1e-9);
+});
+
+test('gastos: tarifa fija usa los km cargados; sin km solo cuenta la agencia', () => {
+  const r = calcular({ tipoViaje: 'hotel-ezeiza', kmTotales: '100', tipoCambio: 1000 }, def());
+  cerca(r.gastos.totalUSD, 44.39, '', 1e-6);
+  cerca(r.gastos.gananciaUSD, 100 - 44.39, '', 1e-6);
+  const sinKm = calcular({ tipoViaje: 'hotel-ezeiza', porAgencia: true, tipoCambio: 1000 }, def());
+  cerca(sinKm.gastos.totalUSD, 20);
+  cerca(sinKm.gastos.margen, 80);
+});

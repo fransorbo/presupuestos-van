@@ -84,6 +84,7 @@
       <div id="km-total">
         <label class="campo">
           <span class="etq">Km totales del recorrido (A → … → D)</span>
+          <span class="ayuda" id="ayuda-km-fija" hidden>Tarifa fija: los km no cambian el precio, solo se usan para calcular los gastos.</span>
           <span class="con-sufijo"><input type="text" inputmode="decimal" data-v="kmTotales" placeholder="0" autocomplete="off"><span class="sufijo">km</span></span>
         </label>
       </div>
@@ -186,10 +187,13 @@
           <span class="con-sufijo prefijo"><span class="sufijo" id="sufijo-manual">$</span><input type="text" inputmode="decimal" data-v="precioManual" placeholder="—" autocomplete="off"></span></label>
       </div>
       <p class="ayuda" id="ayuda-ajustes"></p>
-      <div class="agencia" id="agencia" hidden>
-        <div class="agencia-titulo">Solo para ustedes · no va en el mensaje</div>
-        <div class="agencia-fila"><span id="agencia-etq">Comisión agencia</span><strong id="agencia-comision"></strong></div>
-        <div class="agencia-fila"><span>Neto para ustedes</span><strong id="agencia-neto"></strong></div>
+      <div class="agencia gastos" id="gastos">
+        <div class="agencia-titulo">Gastos y ganancia · solo para ustedes</div>
+        <p class="gastos-nota" id="gastos-nota"></p>
+        <div id="gastos-lineas"></div>
+        <div class="agencia-fila gastos-total"><span>Total gastos</span><strong id="gastos-total"></strong></div>
+        <div class="agencia-fila gastos-ganancia"><span>Ganancia neta</span><strong id="gastos-ganancia"></strong></div>
+        <div class="agencia-fila"><span>Margen de ganancia</span><strong id="gastos-margen"></strong></div>
       </div>
     </section>
 
@@ -284,7 +288,40 @@
         <h2>Agencia</h2>
         <label class="campo"><span class="etq">Comisión de la agencia</span>
           <span class="con-sufijo"><input type="text" inputmode="decimal" data-c="agenciaPorcentaje" data-tipo="numero"><span class="sufijo">%</span></span>
-          <span class="ayuda">No cambia el presupuesto: solo se muestra cuánto queda neto.</span></label>
+          <span class="ayuda">No cambia el presupuesto. Se cuenta como gasto solo en los viajes por agencia.</span></label>
+      </section>
+
+      <section class="card">
+        <h2>Gastos variables</h2>
+        <p class="nota">Valores en pesos. Se calculan según los km de cada viaje y se muestran solo en la app (con la ganancia neta y el margen), nunca en el mensaje.</p>
+        <div class="fila">
+          <label class="campo"><span class="etq">Marcelo: horas cada 100 km</span>
+            <span class="con-sufijo"><input type="text" inputmode="decimal" data-c="costos.choferHorasCada100Km" data-tipo="numero"><span class="sufijo">h</span></span></label>
+          <label class="campo"><span class="etq">Marcelo: por hora</span>
+            <span class="con-sufijo prefijo"><span class="sufijo">$</span><input type="text" inputmode="decimal" data-c="costos.choferPrecioHora" data-tipo="numero"></span></label>
+        </div>
+        <p class="ayuda gastos-ayuda">Las horas de Marcelo cuentan solo cuando viaja Marcelo.</p>
+        <div class="fila">
+          <label class="campo"><span class="etq">Combustible: litros cada 100 km</span>
+            <span class="con-sufijo"><input type="text" inputmode="decimal" data-c="costos.combustibleLitrosCada100Km" data-tipo="numero"><span class="sufijo">l</span></span></label>
+          <label class="campo"><span class="etq">Precio del litro</span>
+            <span class="con-sufijo prefijo"><span class="sufijo">$</span><input type="text" inputmode="decimal" data-c="costos.combustiblePrecioLitro" data-tipo="numero"></span></label>
+        </div>
+        <label class="campo"><span class="etq">Peajes cada 100 km (aprox.)</span>
+          <span class="con-sufijo prefijo"><span class="sufijo">$</span><input type="text" inputmode="decimal" data-c="costos.peajesCada100Km" data-tipo="numero"></span></label>
+        <div class="fila">
+          <label class="campo"><span class="etq">Aceite / service cada</span>
+            <span class="con-sufijo"><input type="text" inputmode="decimal" data-c="costos.aceiteCadaKm" data-tipo="numero"><span class="sufijo">km</span></span></label>
+          <label class="campo"><span class="etq">Costo de cada cambio</span>
+            <span class="con-sufijo prefijo"><span class="sufijo">$</span><input type="text" inputmode="decimal" data-c="costos.aceiteCosto" data-tipo="numero"></span></label>
+        </div>
+        <div class="fila">
+          <label class="campo"><span class="etq">Neumáticos cada</span>
+            <span class="con-sufijo"><input type="text" inputmode="decimal" data-c="costos.neumaticosCadaKm" data-tipo="numero"><span class="sufijo">km</span></span></label>
+          <label class="campo"><span class="etq">Costo de las 4</span>
+            <span class="con-sufijo prefijo"><span class="sufijo">$</span><input type="text" inputmode="decimal" data-c="costos.neumaticosCosto" data-tipo="numero"></span></label>
+        </div>
+        <p class="ayuda" id="ejemplo-gastos"></p>
       </section>
 
       <section class="card">

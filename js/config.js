@@ -40,6 +40,21 @@ export const DEFAULT_CONFIG = {
   // La app lo muestra (solo a ustedes) para ver cuánto queda neto.
   agenciaPorcentaje: 20,
 
+  // Gastos variables aproximados (en pesos), para ver la ganancia de cada viaje.
+  // Solo se muestran en la app, nunca en el mensaje. Se calculan según los km del viaje.
+  costos: {
+    choferHorasCada100Km: 2.5, // horas de Marcelo cada 100 km (solo si viaja Marcelo)
+    choferPrecioHora: 14000,
+    combustibleLitrosCada100Km: 11,
+    combustiblePrecioLitro: 2490,
+    peajesCada100Km: 7000, // aproximado
+    aceiteCadaKm: 10000, // un cambio de aceite / service cada X km
+    aceiteCosto: 800000,
+    neumaticosCadaKm: 50000, // un juego de 4 neumáticos cada X km
+    neumaticosCosto: 1000000,
+    // La comisión de la agencia (agenciaPorcentaje) se suma solo si el viaje es por agencia.
+  },
+
   // Botón "Calcular km": de dónde se sacan los km de la ruta.
   //   'osm'    → OpenStreetMap, gratis y sin clave (los km pueden diferir un poco de Google Maps).
   //   'google' → Google Maps (Routes API). Necesita una clave de API restringida al dominio de la app (ver README).
