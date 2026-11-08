@@ -1,18 +1,19 @@
 // Interfaz: conecta el formulario con la lógica (calc.js) y el guardado (storage.js).
 import { calcular, nombresTramos, num, parsearNumero, cantidadPeajes, tarifaFija } from './calc.js';
-import { formatMoneda, formatNumero, textoWhatsApp, textoEspera, VARIABLES_PLANTILLA } from './format.js';
+import { formatMoneda, formatNumero, formatHora, textoWhatsApp, textoEspera, VARIABLES_PLANTILLA } from './format.js';
 import { urlGoogleMaps, urlWhatsApp, puntosIntermedios, esAeropuerto, MAX_PARADAS_MAPS_MOVIL } from './maps.js';
 import { validarConfig, obtener } from './validar.js';
 import { cargarConfig, guardarConfig, restablecerConfig, cargarViaje, guardarViaje, exportarJSON, importarJSON, cacheDirecciones } from './storage.js';
 import { puntosRuta, calcularKmRuta, ErrorKm } from './distancias.js';
 
-export const VERSION_APP = '1.2.0';
+export const VERSION_APP = '1.3.0';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
 
 let config = cargarConfig();
 let viaje = { ...viajeNuevo(), ...(cargarViaje() || {}) };
+delete viaje.tipoCambio; // el tipo de cambio ahora sale siempre de la configuración
 
 function viajeNuevo(anterior = {}) {
   return {
@@ -36,8 +37,10 @@ function viajeNuevo(anterior = {}) {
     },
     esCountry: false,
     countryPorcentaje: formatNumero(config.countryPorcentaje, 0, 2),
-    moneda: anterior.moneda ?? 'USD',
-    tipoCambio: formatNumero(config.tipoCambio, 0, 2),
+    moneda: anterior.moneda ?? 'ARS',
+    aumentoPorcentaje: '',
+    redondeo: '', // '', 'arriba' o 'abajo'
+    precioManual: '',
     incluirDesglose: anterior.incluirDesglose ?? false,
   };
 }
@@ -60,6 +63,7 @@ function pintarFormulario() {
     else if (el.type === 'checkbox') el.checked = !!v;
     else el.value = v ?? '';
   });
+  $('#moneda-pesos').checked = viaje.moneda === 'ARS';
   pintarParadas();
   pintarTramos();
 }
@@ -127,8 +131,10 @@ function actualizar() {
   guardarViaje(viaje);
   const r = calcular(viaje, config);
 
-  $('#texto-punto-a').textContent = config.puntoA;
-  $('#texto-punto-d').textContent = config.puntoD;
+  for (const [id, nombre, direccion] of [['#texto-punto-a', config.nombreA, config.puntoA], ['#texto-punto-d', config.nombreD, config.puntoD]]) {
+    $(id).textContent = (nombre || '').trim() || direccion;
+    $(id).title = direccion;
+  }
 
   // Tarifa fija: no hacen falta km, extras ni moneda (siempre USD)
   const fija = r.tarifaFija;
@@ -137,7 +143,14 @@ function actualizar() {
   if (fija) $('#resultado-km').hidden = true;
   $('#card-extras').hidden = !!fija;
   $('#nota-moneda-fija').hidden = !fija;
-  $('#card-moneda .fila').hidden = !!fija;
+  $('#campo-moneda').hidden = !!fija;
+  $('#texto-moneda').textContent = viaje.moneda === 'ARS' ? 'En pesos' : 'En dólares';
+  $('#ayuda-moneda').textContent = `Dólar a $ ${formatNumero(config.tipoCambio, 0, 2)} · se cambia en Configuración`;
+
+  // Resumen de "Datos del viaje" (para verlo con el desplegable cerrado)
+  const pax = num(viaje.pasajeros);
+  const fechaCorta = /^\d{4}-\d{2}-\d{2}$/.test(viaje.fecha || '') ? viaje.fecha.slice(8, 10) + '/' + viaje.fecha.slice(5, 7) : '';
+  $('#resumen-datos').textContent = [fechaCorta, formatHora(viaje.hora), pax ? `${Math.round(pax)} pax` : ''].filter(Boolean).join(' · ');
   const notaFija = $('#nota-tarifa-fija');
   notaFija.hidden = !fija;
   if (fija) notaFija.textContent = `Precio cerrado: USD ${formatNumero(fija.usd, 2, 2)}. No se suman km, peajes, extras ni recargos. Si dejás vacía la dejada, el mensaje dice "${fija.destino}".`;
@@ -213,6 +226,19 @@ function actualizar() {
     $('#agencia-neto').textContent = formatMoneda(enMoneda(ag.netoUSD), r.moneda);
   }
 
+  // Ajustes a mano del total
+  const red = r.redondeo;
+  $$('.btn-redondeo').forEach((b) => {
+    const sentido = b.dataset.redondeo;
+    $('.monto', b).textContent = formatMoneda(red[sentido], r.moneda);
+    b.setAttribute('aria-pressed', String(red.elegido === sentido));
+    b.disabled = !(red[sentido] > 0) || r.precioManual;
+  });
+  $('#sufijo-manual').textContent = r.moneda === 'ARS' ? '$' : 'USD';
+  $('#ayuda-ajustes').textContent = r.precioManual
+    ? 'Se usa el precio escrito a mano (reemplaza el cálculo, el aumento y el redondeo).'
+    : `Redondeo a ${formatMoneda(red.multiplo, r.moneda)} (se cambia en Configuración).`;
+
   const totalTxt = formatMoneda(r.total, r.moneda);
   $('#total').textContent = totalTxt;
   $('#total-barra').textContent = totalTxt;
@@ -237,7 +263,6 @@ function enlazarPrincipal() {
     if (el.dataset.parada != null || el.dataset.v === 'origen' || el.dataset.v === 'destino') $('#resultado-km').hidden = true;
     if (el.dataset.v) {
       poner(viaje, el.dataset.v, el.type === 'checkbox' ? el.checked : el.value);
-      if (el.dataset.v === 'tipoCambio') guardarTipoCambio(el.value);
     } else if (el.dataset.parada != null) viaje.paradas[Number(el.dataset.parada)] = el.value;
     else if (el.dataset.tramo != null) viaje.tramos[Number(el.dataset.tramo)] = el.value;
     else return;
@@ -246,6 +271,15 @@ function enlazarPrincipal() {
 
   // Los switches en iOS disparan 'change' (no siempre 'input')
   vista.addEventListener('change', (e) => {
+    if (e.target.id === 'moneda-pesos') {
+      viaje.moneda = e.target.checked ? 'ARS' : 'USD';
+      // El redondeo y el precio a mano dependen de la moneda: se borran al cambiarla
+      viaje.redondeo = '';
+      viaje.precioManual = '';
+      $('[data-v="precioManual"]').value = '';
+      refrescar();
+      return;
+    }
     if (e.target.type === 'checkbox' && e.target.dataset.v) {
       poner(viaje, e.target.dataset.v, e.target.checked);
       refrescar();
@@ -258,6 +292,13 @@ function enlazarPrincipal() {
       const seg = btnSeg.parentElement;
       poner(viaje, seg.dataset.v, aValor(btnSeg.dataset.valor));
       marcarSeg(seg, btnSeg.dataset.valor);
+      refrescar();
+      return;
+    }
+    const btnRed = e.target.closest('[data-redondeo]');
+    if (btnRed) {
+      const sentido = btnRed.dataset.redondeo;
+      viaje.redondeo = viaje.redondeo === sentido ? '' : sentido; // tocar de nuevo lo saca
       refrescar();
       return;
     }
@@ -406,15 +447,6 @@ async function calcularKm() {
   }
 }
 
-/** El tipo de cambio se guarda como "último usado" para los próximos presupuestos. */
-function guardarTipoCambio(txt) {
-  const n = parsearNumero(txt);
-  if (Number.isFinite(n) && n > 0) {
-    config.tipoCambio = n;
-    guardarConfig(config);
-  }
-}
-
 // ---------------------------------------------------------------- configuración
 
 let borrador = null; // copia de la configuración mientras se edita
@@ -446,6 +478,8 @@ function leerConfigDelFormulario() {
   });
   cfg.puntoA = cfg.puntoA.trim().replace(/\s*\n\s*/g, ', ');
   cfg.puntoD = cfg.puntoD.trim().replace(/\s*\n\s*/g, ', ');
+  cfg.nombreA = String(cfg.nombreA || '').trim();
+  cfg.nombreD = String(cfg.nombreD || '').trim();
   cfg.esperaIncluida.textoAeropuerto = cfg.esperaIncluida.textoAeropuerto.trim();
   cfg.esperaIncluida.textoNormal = cfg.esperaIncluida.textoNormal.trim();
   return cfg;
@@ -453,7 +487,6 @@ function leerConfigDelFormulario() {
 
 function actualizarConfigUI() {
   const cfg = leerConfigDelFormulario();
-  $('#campos-redondeo').hidden = !cfg.redondeo.activo;
   const google = cfg.distancias?.proveedor === 'google';
   $('#campo-google-key').hidden = !google;
   $('#ayuda-proveedor').textContent = google
@@ -468,6 +501,9 @@ function actualizarConfigUI() {
 const ETIQUETAS = {
   puntoA: 'Salida (A)',
   puntoD: 'Llegada (D)',
+  nombreA: 'Salida (A): nombre corto',
+  nombreD: 'Llegada (D): nombre corto',
+  tipoCambio: 'Tipo de cambio',
   precioKmUSD: 'Precio por km',
   'precioMinimo.monto': 'Precio mínimo',
   'precioMinimo.moneda': 'Precio mínimo: moneda',
@@ -488,7 +524,6 @@ const ETIQUETAS = {
   'estacionamiento.moneda': 'Estacionamiento: moneda',
   countryPorcentaje: 'Recargo country',
   ajusteGeneralPorcentaje: 'Ajuste general',
-  'redondeo.activo': 'Redondeo',
   'redondeo.multiploUSD': 'Redondeo USD',
   'redondeo.multiploARS': 'Redondeo pesos',
   plantillaWhatsApp: 'Plantilla de WhatsApp',
@@ -521,7 +556,6 @@ function mostrarErrores(errores) {
 function aplicarConfig(nueva) {
   config = nueva;
   guardarConfig(config);
-  viaje.tipoCambio = formatNumero(config.tipoCambio, 0, 2);
   pintarTiposViaje();
   pintarFormulario();
   refrescar();

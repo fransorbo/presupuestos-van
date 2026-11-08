@@ -6,7 +6,7 @@
 // Si cambia un valor por defecto que también tiene que cambiar en los celulares que ya
 // guardaron su configuración, subir CONFIG_VERSION y agregar la migración en storage.js.
 
-export const CONFIG_VERSION = 2;
+export const CONFIG_VERSION = 3;
 
 export const DEFAULT_CONFIG = {
   version: CONFIG_VERSION,
@@ -15,6 +15,9 @@ export const DEFAULT_CONFIG = {
   puntoA: 'Chaco 2625, Valentín Alsina, Lanús, Buenos Aires, Argentina',
   // Punto D: adonde vuelve la van al terminar.
   puntoD: 'Carpe Diem Art, Gdor. Carlos Tejedor 627, B1824 Lanús, Provincia de Buenos Aires, Argentina',
+  // Nombres cortos de A y D que se ven en la pantalla (para buscar la ruta se usa la dirección completa).
+  nombreA: 'Chaco',
+  nombreD: 'Carpe Diem Art',
 
   // Precio por km recorrido, en USD. Igual para todos los tramos.
   precioKmUSD: 1,
@@ -91,15 +94,14 @@ export const DEFAULT_CONFIG = {
   // Ajuste general sobre el total (por ejemplo, inflación). 10 = +10%.
   ajusteGeneralPorcentaje: 0,
 
-  // Redondeo opcional del total, en la moneda que se muestra. Desactivado por ahora.
+  // Botones de redondeo del total (↑ / ↓), en la moneda que se muestra.
   redondeo: {
-    activo: false,
     multiploUSD: 5, // redondea a múltiplos de USD 5
     multiploARS: 1000, // redondea a múltiplos de $ 1.000
   },
 
-  // Tipo de cambio inicial (ARS por 1 USD). Se edita en la pantalla principal y se guarda el último usado.
-  tipoCambio: 1150, // PENDIENTE: cargar el del día
+  // Tipo de cambio: pesos por 1 USD. Se cambia en Configuración.
+  tipoCambio: 1550,
 
   // Plantilla del texto de WhatsApp. Variables disponibles: ver VARIABLES_PLANTILLA en format.js.
   // Si todas las variables de una línea quedan vacías (por ejemplo, sin fecha), esa línea se omite.

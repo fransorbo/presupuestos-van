@@ -44,6 +44,7 @@ export function validarConfig(cfg) {
   else if (dist.proveedor === 'google' && !String(dist.googleApiKey || '').trim()) {
     errores.push({ campo: 'distancias.googleApiKey', mensaje: 'Para usar Google Maps hace falta cargar la clave de API.' });
   }
+  if (esNumeroValido(cfg.tipoCambio) && cfg.tipoCambio === 0) errores.push({ campo: 'tipoCambio', mensaje: 'Tipo de cambio: tiene que ser mayor a 0.' });
   if (!Array.isArray(cfg.palabrasAeropuerto)) errores.push({ campo: 'palabrasAeropuerto', mensaje: 'Palabras de aeropuerto no válidas.' });
   for (const [ruta, etiqueta, max] of NUMERICOS) {
     const v = obtener(cfg, ruta);

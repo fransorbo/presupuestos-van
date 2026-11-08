@@ -1,5 +1,5 @@
 import { test, igual, cerca, verdadero } from './runner.js';
-import { calcular, num, parsearNumero, aUSD, cantidadPeajes, kmDelViaje, nombresTramos, redondearA } from '../js/calc.js';
+import { calcular, num, parsearNumero, aUSD, cantidadPeajes, kmDelViaje, nombresTramos, redondearA, redondearHacia } from '../js/calc.js';
 import { DEFAULT_CONFIG } from '../js/config.js';
 
 // Configuración real por defecto
@@ -214,17 +214,54 @@ test('sin km: total 0 y aviso', () => {
   verdadero(r.avisos.some((a) => a.includes('km')));
 });
 
-test('redondeo opcional (desactivado por defecto)', () => {
-  igual(DEFAULT_CONFIG.redondeo.activo, false);
+test('redondeo hacia arriba / abajo al múltiplo', () => {
   igual(redondearA(1547590, 1000), 1548000);
   igual(redondearA(12.3, 0), 12.3);
-  const c = cfg({ redondeo: { activo: true, multiploUSD: 5, multiploARS: 1000 } });
-  const r = calcular({ kmTotales: 100.8, moneda: 'USD' }, c); // USD 504 → 505
-  cerca(r.total, 505);
-  cerca(r.totalUSD, 505);
-  cerca(linea(r, 'redondeo').usd, 1);
-  const rA = calcular({ kmTotales: 100.8, moneda: 'ARS', tipoCambio: 1150 }, c); // $ 579.600 → $ 580.000
-  cerca(rA.total, 580000, '', 1e-4);
+  igual(redondearHacia(97340, 1000, 'arriba'), 98000);
+  igual(redondearHacia(97340, 1000, 'abajo'), 97000);
+  igual(redondearHacia(98000, 1000, 'arriba'), 98000, 'si ya es múltiplo no cambia');
+  igual(redondearHacia(12.3, 0, 'arriba'), 12.3);
+});
+
+test('ajustes a mano: botones de redondeo en la moneda elegida', () => {
+  const v = { kmTotales: '100.8', moneda: 'ARS', tipoCambio: 1000 }; // $ 100.800 (sobre el mínimo)
+  const r = calcular(v, def());
+  cerca(r.redondeo.arriba, 101000);
+  cerca(r.redondeo.abajo, 100000);
+  cerca(r.total, 100800, 'sin elegir no redondea', 1e-6);
+  const rArriba = calcular({ ...v, redondeo: 'arriba' }, def());
+  cerca(rArriba.total, 101000, '', 1e-6);
+  cerca(rArriba.totalUSD, 101);
+  cerca(linea(rArriba, 'redondeo').usd, 0.2);
+  const rAbajo = calcular({ ...v, redondeo: 'abajo' }, def());
+  cerca(rAbajo.total, 100000, '', 1e-6);
+  const rUSD = calcular({ kmTotales: '100.8', moneda: 'USD', tipoCambio: 1000, redondeo: 'arriba' }, def());
+  cerca(rUSD.total, 105, 'en USD redondea a 5');
+  cerca(rUSD.equivalente.monto, 105000, '', 1e-6);
+});
+
+test('ajustes a mano: aumento %, después redondeo; el precio a mano reemplaza todo', () => {
+  const v = { kmTotales: '100', moneda: 'ARS', tipoCambio: 1000, aumentoPorcentaje: '10' }; // $ 100.000 + 10%
+  const r = calcular(v, def());
+  cerca(r.total, 110000, '', 1e-6);
+  cerca(linea(r, 'aumento').usd, 10);
+  const rR = calcular({ ...v, aumentoPorcentaje: '7,5', redondeo: 'arriba' }, def()); // $ 107.500 → $ 108.000
+  cerca(rR.total, 108000, '', 1e-6);
+  const rM = calcular({ ...v, redondeo: 'abajo', precioManual: '95.000' }, def());
+  cerca(rM.total, 95000, '', 1e-6);
+  igual(rM.precioManual, true);
+  cerca(rM.totalUSD, 95);
+  // También funciona sobre el mínimo y sobre las tarifas fijas
+  cerca(calcular({ kmTotales: '10', moneda: 'ARS', tipoCambio: 1000, aumentoPorcentaje: 10 }, def()).total, 99000, 'mínimo + 10%', 1e-6);
+  cerca(calcular({ tipoViaje: 'hotel-ezeiza', precioManual: '120' }, def()).total, 120);
+});
+
+test('ajustes a mano: el desglose del cliente se reparte y suma el total; la agencia usa el total final', () => {
+  const r = calcular({ ...viajeCompleto(), aumentoPorcentaje: 12, redondeo: 'arriba', porAgencia: true }, cfgCompleta());
+  const suma = r.desgloseCliente.reduce((s, l) => s + l.usd, 0);
+  cerca(suma, r.totalUSD, 'suma del desglose', 1e-6);
+  verdadero(!r.desgloseCliente.some((l) => ['aumento', 'redondeo', 'manual'].includes(l.id)), 'el cliente no ve los ajustes');
+  cerca(r.agencia.comisionUSD, r.totalUSD * 0.2, '', 1e-6);
 });
 
 test('desglose para el cliente: reparte el ajuste general y suma el total', () => {

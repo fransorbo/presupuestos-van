@@ -79,10 +79,20 @@ test('migración v1 → v2: toma el precio por km, el punto A y la plantilla nue
   igual(r.precioKmUSD, 1);
   igual(r.puntoA, DEFAULT_CONFIG.puntoA);
   igual(r.plantillaWhatsApp, DEFAULT_CONFIG.plantillaWhatsApp);
-  igual(r.tipoCambio, 1300);
   igual(r.countryPorcentaje, 8);
-  igual(r.version, 2);
-  // Una configuración v2 guardada no se toca
-  const v2 = combinar(DEFAULT_CONFIG, migrar({ ...r, precioKmUSD: 1.5 }));
-  igual(v2.precioKmUSD, 1.5);
+  igual(r.version, 3);
+  // Una configuración actual guardada no se toca
+  const v3 = combinar(DEFAULT_CONFIG, migrar({ ...r, precioKmUSD: 1.5, tipoCambio: 1600 }));
+  igual(v3.precioKmUSD, 1.5);
+  igual(v3.tipoCambio, 1600);
+});
+
+test('migración v2 → v3: tipo de cambio 1550 y nombres cortos de A y D', () => {
+  const v2 = { version: 2, tipoCambio: 1150, countryPorcentaje: 8, redondeo: { activo: true, multiploUSD: 10, multiploARS: 1000 } };
+  const r = combinar(DEFAULT_CONFIG, migrar(v2));
+  igual(r.tipoCambio, 1550);
+  igual(r.countryPorcentaje, 8);
+  igual(r.redondeo, { multiploUSD: 10, multiploARS: 1000 });
+  igual(r.nombreA, 'Chaco');
+  igual(r.nombreD, 'Carpe Diem Art');
 });

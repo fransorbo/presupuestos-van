@@ -282,3 +282,30 @@ label.btn { -webkit-user-select: none; user-select: none; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* ---------- v1.3: secciones sueltas, desplegable y ajustes del total ---------- */
+.interruptor.sin-borde { margin: 0; }
+.titulo-switch { display: block; font-size: 17px; font-weight: 700; }
+
+.desplegable > summary { list-style: none; display: flex; align-items: center; gap: 8px; cursor: pointer; min-height: 32px; }
+.desplegable > summary::-webkit-details-marker { display: none; }
+.desplegable > summary h2 { margin: 0; flex: none; }
+.desplegable .resumen-datos { flex: 1; min-width: 0; text-align: right; font-size: 14px; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.desplegable .flecha { flex: none; width: 22px; height: 22px; fill: none; stroke: var(--suave); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s; }
+.desplegable[open] .flecha { transform: rotate(180deg); }
+.desplegable[open] > summary { margin-bottom: 12px; }
+
+.total { align-items: center; }
+.total-monto { display: flex; flex-direction: column; min-width: 0; }
+.total-monto strong { overflow-wrap: anywhere; }
+.redondeo { display: flex; flex-direction: column; gap: 6px; flex: none; }
+.btn-redondeo {
+  font: inherit; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;
+  min-height: 36px; padding: 4px 10px; border-radius: 10px; text-align: left;
+  border: 1px solid var(--borde); background: var(--campo); color: var(--texto); cursor: pointer;
+}
+.btn-redondeo[aria-pressed="true"] { background: var(--acento); border-color: var(--acento); color: var(--acento-texto); }
+.btn-redondeo:disabled { opacity: 0.45; cursor: default; }
+.total span.monto, .btn-redondeo span { font-size: inherit; font-weight: inherit; }
+.ajustes-total { margin-top: 12px; }
+#ayuda-ajustes { margin: 0; }

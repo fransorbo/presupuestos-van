@@ -8,11 +8,15 @@ import { formatNumero } from './format.js';
 //   1. Sumas: km + peajes + espera + estacionamiento + hotel + ajuste de chofer = subtotal
 //   2. Recargo country (%) sobre el subtotal
 //   3. Ajuste general (%) sobre (subtotal + recargo country)
-//   4. Redondeo opcional (desactivado por defecto) en la moneda de presentación
-//   5. Precio mínimo: si el total queda por debajo, se cobra el mínimo
+//   4. Precio mínimo: si el total queda por debajo, se cobra el mínimo
 //
 // Viaje con tarifa fija (por ejemplo, hotel de CABA → Ezeiza):
 //   El total es la tarifa, siempre en USD. No se suma nada ni se aplica el mínimo.
+//
+// Después, en ambos casos, los ajustes a mano de la pantalla principal (en la moneda elegida):
+//   a. Aumento (%) sobre el total
+//   b. Redondeo hacia arriba o hacia abajo (al múltiplo de la configuración)
+//   c. Precio elegido a mano: si se escribe, reemplaza todo lo anterior
 //
 // En ambos casos, si el viaje es por agencia, el presupuesto NO cambia: solo se informa
 // (en la app, nunca al cliente) la comisión de la agencia y lo que queda neto.
@@ -82,6 +86,14 @@ export function redondearA(valor, multiplo) {
   return m > 0 ? Math.round(valor / m) * m : valor;
 }
 
+/** Redondea hacia arriba ('arriba') o hacia abajo ('abajo') al múltiplo indicado. */
+export function redondearHacia(valor, multiplo, sentido) {
+  const m = num(multiplo);
+  if (!(m > 0)) return valor;
+  const veces = valor / m;
+  return (sentido === 'abajo' ? Math.floor(veces + 1e-9) : Math.ceil(veces - 1e-9)) * m;
+}
+
 /** Tarifa fija elegida en el viaje (o undefined si el viaje es por km). */
 export function tarifaFija(viaje, config) {
   if (!viaje.tipoViaje || viaje.tipoViaje === 'km') return undefined;
@@ -104,6 +116,7 @@ const plural = (n, uno, varios) => `${formatNumero(n, 0, 2)} ${n === 1 ? uno : v
 export function calcular(viaje, config) {
   const fija = tarifaFija(viaje, config);
   const r = fija ? calcularTarifaFija(viaje, config, fija) : calcularPorKm(viaje, config);
+  aplicarAjustesFinales(r, viaje, config);
 
   // Agencia: no cambia el presupuesto; solo se informa la comisión y el neto
   const pctAgencia = viaje.porAgencia ? num(config.agenciaPorcentaje) : 0;
@@ -185,18 +198,10 @@ function calcularPorKm(viaje, config) {
 
   const totalUSDsinRedondeo = antesAjuste + generalUSD;
 
-  // 4. Redondeo opcional en la moneda de presentación
   let total = desdeUSD(totalUSDsinRedondeo, moneda, tc);
-  let redondeoUSD = 0;
-  if (config.redondeo?.activo) {
-    const redondeado = redondearA(total, moneda === 'ARS' ? config.redondeo.multiploARS : config.redondeo.multiploUSD);
-    redondeoUSD = moneda === 'ARS' ? (tc ? (redondeado - total) / tc : 0) : redondeado - total;
-    total = redondeado;
-  }
-  if (redondeoUSD) lineas.push({ id: 'redondeo', etiqueta: 'Redondeo', detalle: '', usd: redondeoUSD });
-  let totalUSD = totalUSDsinRedondeo + redondeoUSD;
+  let totalUSD = totalUSDsinRedondeo;
 
-  // 5. Precio mínimo (solo si ya hay km cargados)
+  // 4. Precio mínimo (solo si ya hay km cargados)
   const minimoUSD = aUSD(minimo.monto, minimo.moneda, tc);
   let minimoAplicado = false;
   if (km > 0 && minimoUSD > 0 && totalUSD < minimoUSD - 1e-9) {
@@ -239,7 +244,58 @@ export function desgloseCliente(lineas, pctGeneral) {
   const factor = 1 + num(pctGeneral) / 100;
   return lineas
     .filter((l) => l.id !== 'ajuste' && Math.abs(l.usd) > 1e-9)
-    .map((l) => ({ id: l.id, etiqueta: l.etiqueta, detalle: l.detalle, extra: !!l.extra, usd: l.id === 'redondeo' ? l.usd : l.usd * factor }));
+    .map((l) => ({ id: l.id, etiqueta: l.etiqueta, detalle: l.detalle, extra: !!l.extra, usd: l.usd * factor }));
+}
+
+/**
+ * Ajustes a mano sobre el total, en la moneda elegida: aumento %, redondeo ↑/↓ y precio a mano.
+ * Agrega líneas internas ('aumento', 'redondeo', 'manual'), y en el desglose para el cliente
+ * reparte la diferencia proporcionalmente (así la suma sigue dando el total).
+ * También deja en `r.redondeo` las dos opciones de redondeo para mostrarlas en los botones.
+ */
+function aplicarAjustesFinales(r, viaje, config) {
+  const { moneda, tipoCambio: tc } = r;
+  const aUSDm = (m) => (moneda === 'ARS' ? (tc ? m / tc : 0) : m);
+  const fmt = (m) => (moneda === 'ARS' ? `$ ${formatNumero(m, 0, 0)}` : `USD ${formatNumero(m, 0, 2)}`);
+  const base = r.total;
+  let total = base;
+
+  const pct = num(viaje.aumentoPorcentaje);
+  if (pct && total > 0) {
+    const nuevo = total * (1 + pct / 100);
+    r.lineas.push({ id: 'aumento', etiqueta: 'Aumento', detalle: `${fmtNum(pct)}%`, usd: aUSDm(nuevo - total) });
+    total = nuevo;
+  }
+
+  const multiplo = num(moneda === 'ARS' ? config.redondeo?.multiploARS : config.redondeo?.multiploUSD);
+  r.redondeo = {
+    multiplo,
+    arriba: total > 0 ? redondearHacia(total, multiplo, 'arriba') : 0,
+    abajo: total > 0 ? redondearHacia(total, multiplo, 'abajo') : 0,
+    elegido: viaje.redondeo === 'arriba' || viaje.redondeo === 'abajo' ? viaje.redondeo : '',
+  };
+  if (r.redondeo.elegido && total > 0) {
+    const nuevo = r.redondeo[r.redondeo.elegido];
+    if (Math.abs(nuevo - total) > 1e-9) {
+      r.lineas.push({ id: 'redondeo', etiqueta: `Redondeo hacia ${r.redondeo.elegido}`, detalle: `a ${fmt(multiplo)}`, usd: aUSDm(nuevo - total) });
+    }
+    total = nuevo;
+  }
+
+  const manual = num(viaje.precioManual);
+  r.precioManual = manual > 0;
+  if (manual > 0) {
+    r.lineas.push({ id: 'manual', etiqueta: 'Precio elegido a mano', detalle: fmt(manual), usd: aUSDm(manual - total) });
+    total = manual;
+  }
+
+  if (Math.abs(total - base) < 1e-9) return;
+  const totalUSDantes = r.totalUSD;
+  r.total = total;
+  r.totalUSD = moneda === 'ARS' ? (tc ? total / tc : r.totalUSD) : total;
+  const factor = totalUSDantes > 0 ? r.totalUSD / totalUSDantes : 1;
+  r.desgloseCliente = r.desgloseCliente.map((l) => ({ ...l, usd: l.usd * factor }));
+  if (r.equivalente) r.equivalente = { moneda: r.equivalente.moneda, monto: desdeUSD(r.totalUSD, r.equivalente.moneda, tc) };
 }
 
 const fmtNum = (n) => formatNumero(n, 0, 2);
