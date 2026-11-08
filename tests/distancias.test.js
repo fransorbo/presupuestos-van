@@ -167,3 +167,7 @@ test('sin internet → error claro', async () => {
   };
   await lanza(() => calcularKmRuta(['A', 'B', 'C', 'D'], { proveedor: 'osm' }, { fetch, esperar: sinEspera }), 'conexión');
 });
+
+test('puntos de la ruta: EZE y AEP se buscan con la dirección completa', () => {
+  igual(puntosRuta({ ...base, origen: 'EZE', paradas: ['aep'], destino: 'Nordelta' }), ['Chaco 2625', 'Aeropuerto Internacional Ezeiza', 'Aeroparque Jorge Newbery', 'Nordelta', 'Carpe Diem']);
+});

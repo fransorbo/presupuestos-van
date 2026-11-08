@@ -2,7 +2,7 @@
 // Estrategia "primero la red": si hay internet se usa siempre la versión más nueva
 // (y se guarda una copia); sin internet se usa la copia guardada.
 // Al publicar cambios grandes, subir VERSION para limpiar las copias viejas.
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = `presupuestos-van-${VERSION}`;
 const ARCHIVOS = [
   './',

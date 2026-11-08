@@ -7,6 +7,7 @@
 // Las funciones que arman URLs y leen respuestas son puras (se testean en tests/distancias.test.js).
 // `calcularKmRuta` hace los pedidos de red; recibe `fetch`, la espera y la caché como parámetros
 // para poder probarla sin internet.
+import { expandirAlias } from './maps.js';
 
 export const PROVEEDORES = {
   osm: 'OpenStreetMap (gratis)',
@@ -30,7 +31,7 @@ export function puntosRuta({ puntoA, puntoD, origen, paradas = [], destino }) {
   if (!limpio(destino)) throw new ErrorKm('Escribí la dirección de dejada (C).');
   const i = paradas.findIndex((p) => !limpio(p));
   if (i >= 0) throw new ErrorKm(`La parada ${i + 1} está vacía: completala o quitala.`);
-  return [puntoA, origen, ...paradas, destino, puntoD].map(limpio);
+  return [limpio(puntoA), ...[origen, ...paradas, destino].map(expandirAlias), limpio(puntoD)];
 }
 
 /** Nombres de los puntos, en el mismo orden que puntosRuta (para los mensajes de error). */

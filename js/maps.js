@@ -4,9 +4,21 @@
 /** Google Maps en el celular acepta hasta 3 paradas intermedias; en la compu, hasta 9. */
 export const MAX_PARADAS_MAPS_MOVIL = 3;
 
-/** Puntos intermedios de la ruta A → B → (paradas) → C → D. */
+/** Atajos: si en B, C o una parada se escribe solo esto (sin importar mayúsculas), se usa la dirección completa. */
+export const ALIAS_DIRECCIONES = {
+  eze: 'Aeropuerto Internacional Ezeiza',
+  aep: 'Aeroparque Jorge Newbery',
+};
+
+/** Reemplaza un atajo ("EZE", "aep") por la dirección completa. Cualquier otro texto queda igual (sin espacios de más). */
+export function expandirAlias(texto) {
+  const t = String(texto || '').trim();
+  return ALIAS_DIRECCIONES[normalizar(t)] || t;
+}
+
+/** Puntos intermedios de la ruta A → B → (paradas) → C → D (con los atajos ya reemplazados). */
 export function puntosIntermedios({ origen, paradas = [], destino }) {
-  return [origen, ...paradas, destino].map((p) => (p || '').trim()).filter(Boolean);
+  return [origen, ...paradas, destino].map(expandirAlias).filter(Boolean);
 }
 
 /**

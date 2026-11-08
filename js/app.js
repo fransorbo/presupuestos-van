@@ -1,12 +1,12 @@
 // Interfaz: conecta el formulario con la lógica (calc.js) y el guardado (storage.js).
 import { calcular, nombresTramos, num, parsearNumero, cantidadPeajes, tarifaFija } from './calc.js';
 import { formatMoneda, formatNumero, formatHora, textoWhatsApp, textoEspera, VARIABLES_PLANTILLA } from './format.js';
-import { urlGoogleMaps, urlWhatsApp, puntosIntermedios, esAeropuerto, MAX_PARADAS_MAPS_MOVIL } from './maps.js';
+import { urlGoogleMaps, urlWhatsApp, puntosIntermedios, esAeropuerto, expandirAlias, MAX_PARADAS_MAPS_MOVIL } from './maps.js';
 import { validarConfig, obtener } from './validar.js';
 import { cargarConfig, guardarConfig, restablecerConfig, cargarViaje, guardarViaje, exportarJSON, importarJSON, cacheDirecciones } from './storage.js';
 import { puntosRuta, calcularKmRuta, ErrorKm } from './distancias.js';
 
-export const VERSION_APP = '1.3.0';
+export const VERSION_APP = '1.3.1';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
@@ -98,9 +98,10 @@ function pintarParadas() {
     fila.innerHTML = `
       <span class="etq"><span class="chip chip-parada">${i + 1}</span> Parada ${i + 1}</span>
       <div class="con-boton">
-        <input type="text" data-parada="${i}" placeholder="Dirección de la parada" autocomplete="off" autocapitalize="words">
+        <input type="text" data-parada="${i}" placeholder="Dirección de la parada (o EZE / AEP)" autocomplete="off" autocapitalize="words">
         <button type="button" class="btn-quitar" data-quitar="${i}" aria-label="Quitar parada ${i + 1}">✕</button>
-      </div>`;
+      </div>
+      <span class="ayuda destacada" data-ayuda-parada="${i}"></span>`;
     $('input', fila).value = p;
     cont.append(fila);
   });
@@ -154,12 +155,20 @@ function actualizar() {
   const notaFija = $('#nota-tarifa-fija');
   notaFija.hidden = !fija;
   if (fija) notaFija.textContent = `Precio cerrado: USD ${formatNumero(fija.usd, 2, 2)}. No se suman km, peajes, extras ni recargos. Si dejás vacía la dejada, el mensaje dice "${fija.destino}".`;
-  $('[data-v="destino"]').placeholder = fija ? fija.destino : 'Dirección de dejada';
+  $('[data-v="destino"]').placeholder = fija ? fija.destino : 'Dirección de dejada (o EZE / AEP)';
 
   // Espera incluida según la recogida
   const ayudaEspera = $('#ayuda-espera-incluida');
   const enAeropuerto = esAeropuerto(viaje.origen, config.palabrasAeropuerto);
-  ayudaEspera.textContent = viaje.origen.trim() ? `${enAeropuerto ? '✈️ Aeropuerto. ' : ''}${textoEspera(viaje.origen, config)}` : '';
+  // Atajos EZE / AEP: se muestra a qué dirección corresponden
+  const atajo = (texto) => {
+    const completa = expandirAlias(texto);
+    return completa && completa !== String(texto || '').trim() ? `✈️ ${completa}` : '';
+  };
+  const nombreB = atajo(viaje.origen);
+  ayudaEspera.textContent = viaje.origen.trim() ? `${nombreB ? nombreB + '. ' : enAeropuerto ? '✈️ Aeropuerto. ' : ''}${textoEspera(viaje.origen, config)}` : '';
+  $('#ayuda-destino').textContent = atajo(viaje.destino);
+  $$('[data-ayuda-parada]').forEach((el) => (el.textContent = atajo(viaje.paradas[Number(el.dataset.ayudaParada)])));
   ayudaEspera.classList.toggle('destacada', enAeropuerto);
 
   $('#ayuda-agencia').textContent = `La agencia se queda con el ${formatNumero(config.agenciaPorcentaje, 0, 2)}%. El presupuesto no cambia.`;

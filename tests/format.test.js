@@ -121,3 +121,9 @@ test('WhatsApp: variables desconocidas quedan como están', () => {
   const t = esp(textoWhatsApp({ plantilla: 'Hola {nombre}, total {total}', viaje, resultado, incluirDesglose: false }));
   igual(t, 'Hola {nombre}, total USD 120,00');
 });
+
+test('WhatsApp: los atajos EZE y AEP se muestran con el nombre completo', () => {
+  const t = mensaje({ ...viaje, origen: 'eze', paradas: ['Obelisco'], destino: 'AEP' });
+  verdadero(t.includes('Recorrido: Aeropuerto Internacional Ezeiza → Obelisco → Aeroparque Jorge Newbery'), t);
+  verdadero(t.includes('1 hora desde que aterriza'), 'EZE cuenta como aeropuerto');
+});

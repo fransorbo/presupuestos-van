@@ -1,5 +1,5 @@
 // Formato de números y armado del texto para WhatsApp. Funciones puras.
-import { esAeropuerto } from './maps.js';
+import { esAeropuerto, expandirAlias } from './maps.js';
 // Formato argentino: punto de miles y coma decimal (USD 1.250,00 / $ 1.437.500).
 
 /** Formatea un número con punto de miles y coma decimal. */
@@ -86,10 +86,11 @@ export function textoDesglose(resultado) {
  * No deja más de una línea en blanco seguida.
  */
 export function textoWhatsApp({ plantilla, viaje, resultado, incluirDesglose, config }) {
-  const paradas = (viaje.paradas || []).map((p) => p.trim()).filter(Boolean);
-  const origen = (viaje.origen || '').trim();
+  // Los atajos (EZE, AEP) se muestran con el nombre completo
+  const paradas = (viaje.paradas || []).map(expandirAlias).filter(Boolean);
+  const origen = expandirAlias(viaje.origen);
   // En las tarifas fijas, si no se escribió la dejada, se usa el aeropuerto de la tarifa
-  const destino = (viaje.destino || '').trim() || resultado.tarifaFija?.destino || '';
+  const destino = expandirAlias(viaje.destino) || resultado.tarifaFija?.destino || '';
   const recorrido = [origen, ...paradas, destino].filter(Boolean).join(' → ');
   const pax = Number(viaje.pasajeros) > 0 ? String(Math.round(Number(viaje.pasajeros))) : '';
   const eq = resultado.equivalente;
