@@ -6,7 +6,7 @@ import { validarConfig, obtener } from './validar.js';
 import { cargarConfig, guardarConfig, restablecerConfig, cargarViaje, guardarViaje, exportarJSON, importarJSON, cacheDirecciones } from './storage.js';
 import { puntosRuta, calcularKmRuta, ErrorKm } from './distancias.js';
 
-export const VERSION_APP = '1.4.0';
+export const VERSION_APP = '1.4.1';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
@@ -776,5 +776,21 @@ refrescar();
 mostrarVista();
 
 if ('serviceWorker' in navigator && window.isSecureContext) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  const habiaVersion = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker
+    .register('./sw.js')
+    .then((reg) => {
+      // Al volver a la app (por ejemplo, desde otra app del iPhone) se busca si hay una versión nueva
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      });
+    })
+    .catch(() => {});
+  // Cuando se instala una versión nueva, la app se recarga sola una vez para usarla
+  let recargando = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!habiaVersion || recargando) return;
+    recargando = true;
+    location.reload();
+  });
 }

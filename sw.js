@@ -2,7 +2,7 @@
 // Estrategia "primero la red": si hay internet se usa siempre la versión más nueva
 // (y se guarda una copia); sin internet se usa la copia guardada.
 // Al publicar cambios grandes, subir VERSION para limpiar las copias viejas.
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = `presupuestos-van-${VERSION}`;
 const ARCHIVOS = [
   './',
@@ -23,7 +23,8 @@ const ARCHIVOS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
+  // cache: 'reload' → baja los archivos del servidor, no de la caché del navegador
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ARCHIVOS.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -45,7 +46,9 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   e.respondWith(
-    conTiempoLimite(fetch(req), 4000)
+    // cache: 'no-cache' → siempre pregunta al servidor si hay una versión nueva
+    // (GitHub Pages deja guardar los archivos 10 minutos, y eso mostraba versiones viejas)
+    conTiempoLimite(fetch(req.url, { cache: 'no-cache' }), 4000)
       .then((resp) => {
         if (resp.ok) {
           const copia = resp.clone();
