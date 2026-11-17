@@ -6,7 +6,7 @@
 // Si cambia un valor por defecto que también tiene que cambiar en los celulares que ya
 // guardaron su configuración, subir CONFIG_VERSION y agregar la migración en storage.js.
 
-export const CONFIG_VERSION = 3;
+export const CONFIG_VERSION = 4;
 
 export const DEFAULT_CONFIG = {
   version: CONFIG_VERSION,
@@ -112,7 +112,7 @@ export const DEFAULT_CONFIG = {
   // Botones de redondeo del total (↑ / ↓), en la moneda que se muestra.
   redondeo: {
     multiploUSD: 5, // redondea a múltiplos de USD 5
-    multiploARS: 1000, // redondea a múltiplos de $ 1.000
+    multiploARS: 10000, // redondea a múltiplos de $ 10.000
   },
 
   // Tipo de cambio: pesos por 1 USD. Se cambia en Configuración.

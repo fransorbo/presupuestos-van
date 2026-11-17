@@ -41,6 +41,7 @@ function escribir(clave, valor) {
  * Actualiza una configuración guardada con una versión anterior de la app.
  * v1 → v2: cambiaron el precio por km (5 → 1 USD), el punto A (ahora hay A y D) y la plantilla.
  * v2 → v3: el tipo de cambio pasa a 1550 (ahora se cambia solo en Configuración) y se saca el redondeo automático.
+ * v3 → v4: el redondeo en pesos pasa a $ 10.000.
  */
 export function migrar(guardado) {
   if (!esObjeto(guardado)) return guardado;
@@ -54,6 +55,9 @@ export function migrar(guardado) {
   if ((g.version ?? CONFIG_VERSION) < 3) {
     delete g.tipoCambio;
     if (esObjeto(g.redondeo)) delete g.redondeo.activo;
+  }
+  if ((g.version ?? CONFIG_VERSION) < 4) {
+    if (esObjeto(g.redondeo)) delete g.redondeo.multiploARS;
   }
   g.version = CONFIG_VERSION;
   return g;

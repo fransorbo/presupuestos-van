@@ -224,17 +224,17 @@ test('redondeo hacia arriba / abajo al múltiplo', () => {
 });
 
 test('ajustes a mano: botones de redondeo en la moneda elegida', () => {
-  const v = { kmTotales: '100.8', moneda: 'ARS', tipoCambio: 1000 }; // $ 100.800 (sobre el mínimo)
+  const v = { kmTotales: '203.5', moneda: 'ARS', tipoCambio: 1000 }; // $ 203.500
   const r = calcular(v, def());
-  cerca(r.redondeo.arriba, 101000);
-  cerca(r.redondeo.abajo, 100000);
-  cerca(r.total, 100800, 'sin elegir no redondea', 1e-6);
+  cerca(r.redondeo.arriba, 210000, 'de a $ 10.000');
+  cerca(r.redondeo.abajo, 200000, 'de a $ 10.000');
+  cerca(r.total, 203500, 'sin elegir no redondea', 1e-6);
   const rArriba = calcular({ ...v, redondeo: 'arriba' }, def());
-  cerca(rArriba.total, 101000, '', 1e-6);
-  cerca(rArriba.totalUSD, 101);
-  cerca(linea(rArriba, 'redondeo').usd, 0.2);
+  cerca(rArriba.total, 210000, '', 1e-6);
+  cerca(rArriba.totalUSD, 210);
+  cerca(linea(rArriba, 'redondeo').usd, 6.5);
   const rAbajo = calcular({ ...v, redondeo: 'abajo' }, def());
-  cerca(rAbajo.total, 100000, '', 1e-6);
+  cerca(rAbajo.total, 200000, '', 1e-6);
   const rUSD = calcular({ kmTotales: '100.8', moneda: 'USD', tipoCambio: 1000, redondeo: 'arriba' }, def());
   cerca(rUSD.total, 105, 'en USD redondea a 5');
   cerca(rUSD.equivalente.monto, 105000, '', 1e-6);
@@ -245,8 +245,8 @@ test('ajustes a mano: aumento %, después redondeo; el precio a mano reemplaza t
   const r = calcular(v, def());
   cerca(r.total, 110000, '', 1e-6);
   cerca(linea(r, 'aumento').usd, 10);
-  const rR = calcular({ ...v, aumentoPorcentaje: '7,5', redondeo: 'arriba' }, def()); // $ 107.500 → $ 108.000
-  cerca(rR.total, 108000, '', 1e-6);
+  const rR = calcular({ ...v, aumentoPorcentaje: '7,5', redondeo: 'arriba' }, def()); // $ 107.500 → $ 110.000
+  cerca(rR.total, 110000, '', 1e-6);
   const rM = calcular({ ...v, redondeo: 'abajo', precioManual: '95.000' }, def());
   cerca(rM.total, 95000, '', 1e-6);
   igual(rM.precioManual, true);

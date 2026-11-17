@@ -6,7 +6,7 @@ import { validarConfig, obtener } from './validar.js';
 import { cargarConfig, guardarConfig, restablecerConfig, cargarViaje, guardarViaje, exportarJSON, importarJSON, cacheDirecciones } from './storage.js';
 import { puntosRuta, calcularKmRuta, ErrorKm } from './distancias.js';
 
-export const VERSION_APP = '1.4.1';
+export const VERSION_APP = '1.5.0';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
@@ -28,7 +28,7 @@ function viajeNuevo(anterior = {}) {
     fecha: '',
     hora: '',
     pasajeros: '',
-    chofer: anterior.chofer ?? 'cristian',
+    chofer: 'marcelo', // cada viaje nuevo arranca con Marcelo
     horasEspera: '',
     noches: '',
     estacionamiento: {
@@ -264,7 +264,6 @@ function actualizar() {
 
   const totalTxt = formatMoneda(r.total, r.moneda);
   $('#total').textContent = totalTxt;
-  $('#total-barra').textContent = totalTxt;
   $('#equivalente').textContent = r.equivalente ? `≈ ${formatMoneda(r.equivalente.monto, r.equivalente.moneda)} (cambio $ ${formatNumero(r.tipoCambio, 0, 2)})` : '';
 
   // WhatsApp
@@ -375,8 +374,6 @@ function enlazarPrincipal() {
     aviso('No se pudo copiar solo. El texto quedó seleccionado: tocá "Copiar".');
   };
   $('#btn-copiar').addEventListener('click', copiarYAvisar);
-  $('#btn-copiar-barra').addEventListener('click', copiarYAvisar);
-  $('#ir-resultado').addEventListener('click', () => $('#resultado').scrollIntoView({ behavior: 'smooth', block: 'start' }));
 
   $('#btn-nuevo').addEventListener('click', () => {
     if (!confirm('¿Empezar un presupuesto nuevo? Se borran los datos cargados.')) return;
@@ -386,18 +383,6 @@ function enlazarPrincipal() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  // Mostrar la barra de total solo cuando el resultado y el mensaje no están a la vista
-  const barra = $('#barra-total');
-  const visibles = new Set();
-  const io = new IntersectionObserver(
-    (entradas) => {
-      for (const en of entradas) en.isIntersecting ? visibles.add(en.target) : visibles.delete(en.target);
-      barra.classList.toggle('oculta', visibles.size > 0);
-    },
-    { threshold: 0.15 }
-  );
-  io.observe($('#resultado'));
-  io.observe($('#btn-copiar').closest('.card'));
 }
 
 // ---------------------------------------------------------------- calcular km
@@ -720,7 +705,6 @@ function mostrarVista() {
   const enConfig = location.hash === '#config';
   $('#vista-principal').hidden = enConfig;
   $('#vista-config').hidden = !enConfig;
-  $('#barra-total').hidden = enConfig;
   $('#btn-config').hidden = enConfig;
   $('#btn-volver').hidden = !enConfig;
   $('#titulo').textContent = enConfig ? 'Configuración' : 'Presupuesto';
