@@ -2,7 +2,7 @@
 // Estrategia "primero la red": si hay internet se usa siempre la versión más nueva
 // (y se guarda una copia); sin internet se usa la copia guardada.
 // Al publicar cambios grandes, subir VERSION para limpiar las copias viejas.
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CACHE = `presupuestos-van-${VERSION}`;
 const ARCHIVOS = [
   './',
@@ -17,6 +17,7 @@ const ARCHIVOS = [
   './js/maps.js',
   './js/storage.js',
   './js/validar.js',
+  './js/sheet.js',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',

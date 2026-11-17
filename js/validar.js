@@ -1,4 +1,5 @@
 // Validación de la configuración. Función pura: devuelve la lista de errores (vacía = todo bien).
+import { esUrlSheet } from './sheet.js';
 
 const esNumeroValido = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0;
 
@@ -72,6 +73,9 @@ export function validarConfig(cfg) {
     for (const k of ['fijoUSD', 'porKmUSD', 'porcentaje']) {
       if (!esNumeroValido(ch?.[k])) errores.push({ campo: `choferes.${id}.${k}`, mensaje: `Chofer ${ch?.nombre || id}: ${k} no válido.` });
     }
+  }
+  if (String(cfg.sheetUrl || '').trim() && !esUrlSheet(cfg.sheetUrl)) {
+    errores.push({ campo: 'sheetUrl', mensaje: 'Google Sheets: la dirección tiene que ser la del script (https://script.google.com/macros/s/…/exec).' });
   }
   if (typeof cfg.plantillaWhatsApp !== 'string' || !cfg.plantillaWhatsApp.includes('{total}')) {
     errores.push({ campo: 'plantillaWhatsApp', mensaje: 'La plantilla de WhatsApp tiene que incluir {total}.' });

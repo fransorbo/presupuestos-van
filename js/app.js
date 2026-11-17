@@ -5,8 +5,9 @@ import { urlGoogleMaps, urlWhatsApp, puntosIntermedios, esAeropuerto, expandirAl
 import { validarConfig, obtener } from './validar.js';
 import { cargarConfig, guardarConfig, restablecerConfig, cargarViaje, guardarViaje, exportarJSON, importarJSON, cacheDirecciones } from './storage.js';
 import { puntosRuta, calcularKmRuta, ErrorKm } from './distancias.js';
+import { filaSheet, enviarAlSheet, esUrlSheet } from './sheet.js';
 
-export const VERSION_APP = '1.5.0';
+export const VERSION_APP = '1.6.0';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
@@ -375,13 +376,17 @@ function enlazarPrincipal() {
   };
   $('#btn-copiar').addEventListener('click', copiarYAvisar);
 
-  $('#btn-nuevo').addEventListener('click', () => {
+  const nuevoPresupuesto = () => {
     if (!confirm('¿Empezar un presupuesto nuevo? Se borran los datos cargados.')) return;
     viaje = viajeNuevo(viaje);
     pintarFormulario();
     refrescar();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
+  };
+  $('#btn-nuevo').addEventListener('click', nuevoPresupuesto);
+  $('#btn-nuevo-arriba').addEventListener('click', nuevoPresupuesto);
+
+  enlazarGuardado();
 
 }
 
@@ -554,6 +559,7 @@ const ETIQUETAS = {
   'estacionamiento.moneda': 'Estacionamiento: moneda',
   countryPorcentaje: 'Recargo country',
   ajusteGeneralPorcentaje: 'Ajuste general',
+  sheetUrl: 'Dirección del Sheet',
   'redondeo.multiploUSD': 'Redondeo USD',
   'redondeo.multiploARS': 'Redondeo pesos',
   plantillaWhatsApp: 'Plantilla de WhatsApp',
@@ -734,6 +740,52 @@ async function copiar(texto) {
   } catch {}
   ta.remove();
   return ok;
+}
+
+// ---------------------------------------------------------------- guardar en Google Sheets
+
+function enlazarGuardado() {
+  const dialogo = $('#dialogo-guardar');
+  const confirmar = $('#btn-guardar-confirmar');
+  let enviando = false;
+
+  $('#btn-guardar-sheet').addEventListener('click', () => {
+    if (!esUrlSheet(config.sheetUrl)) {
+      aviso('Primero cargá la dirección del Sheet en Configuración.');
+      return;
+    }
+    if (!calcular(viaje, config).total) {
+      aviso('El presupuesto está en 0: cargá el viaje antes de guardarlo.');
+      return;
+    }
+    $('#guardar-persona').value = '';
+    $('#guardar-fecha').value = viaje.fecha || '';
+    $('#error-guardar').hidden = true;
+    dialogo.showModal();
+  });
+  $('#btn-guardar-cancelar').addEventListener('click', () => dialogo.close());
+
+  $('#form-guardar').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (enviando) return;
+    enviando = true;
+    confirmar.disabled = true;
+    confirmar.textContent = 'Guardando…';
+    try {
+      const r = calcular(viaje, config);
+      const fila = filaSheet(viaje, r, config, { persona: $('#guardar-persona').value, fecha: $('#guardar-fecha').value });
+      const resp = await enviarAlSheet(config.sheetUrl, fila);
+      dialogo.close();
+      aviso(resp.fila ? `Guardado en el Sheet (fila ${resp.fila}).` : 'Guardado en el Sheet.');
+    } catch (err) {
+      $('#error-guardar').textContent = err.message || 'No se pudo guardar.';
+      $('#error-guardar').hidden = false;
+    } finally {
+      enviando = false;
+      confirmar.disabled = false;
+      confirmar.textContent = 'Guardar';
+    }
+  });
 }
 
 let timerToast;

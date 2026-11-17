@@ -30,7 +30,10 @@
   <main id="vista-principal" class="vista">
 
     <section class="card">
-      <h2>Tipo de viaje</h2>
+      <div class="card-titulo">
+        <h2>Tipo de viaje</h2>
+        <button type="button" class="btn-nuevo-arriba" id="btn-nuevo-arriba">Nuevo</button>
+      </div>
       <div class="seg tipos" data-v="tipoViaje" role="group" aria-label="Tipo de viaje" id="tipos-viaje">
         <button type="button" data-valor="km"><span>Por km</span><small>A → B → C → D</small></button>
       </div>
@@ -206,6 +209,7 @@
       <pre class="vista-previa" id="vista-previa"></pre>
       <button type="button" class="btn primario" id="btn-copiar">Copiar texto para WhatsApp</button>
       <a class="btn whatsapp" id="btn-whatsapp" target="_blank" rel="noopener">Abrir WhatsApp</a>
+      <button type="button" class="btn secundario" id="btn-guardar-sheet">Guardar</button>
       <button type="button" class="btn-texto peligro" id="btn-nuevo">Nuevo presupuesto</button>
     </section>
   </main>
@@ -264,6 +268,13 @@
         <label class="campo" id="campo-google-key"><span class="etq">Clave de API de Google</span>
           <input type="text" data-c="distancias.googleApiKey" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="AIza…">
           <span class="ayuda">Se crea en Google Cloud (ver README). Queda guardada en este celular y en el respaldo JSON.</span></label>
+      </section>
+
+      <section class="card">
+        <h2>Google Sheets</h2>
+        <p class="nota">Dirección del script que guarda cada viaje en la planilla (termina en /exec). Queda guardada en este celular y en el respaldo JSON.</p>
+        <label class="campo"><span class="etq">Dirección del script</span>
+          <input type="url" data-c="sheetUrl" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec"></label>
       </section>
 
       <section class="card">
@@ -398,6 +409,22 @@
       <p class="version" id="version"></p>
     </form>
   </main>
+
+  <dialog class="dialogo" id="dialogo-guardar" aria-labelledby="titulo-guardar">
+    <form method="dialog" id="form-guardar">
+      <h2 id="titulo-guardar">Guardar viaje</h2>
+      <p class="nota">Se agrega una fila en el Sheet con todos los datos del presupuesto.</p>
+      <label class="campo"><span class="etq">Nombre de quien viaja</span>
+        <input type="text" id="guardar-persona" placeholder="Opcional" autocomplete="off" autocapitalize="words"></label>
+      <label class="campo"><span class="etq">Fecha del viaje</span>
+        <input type="date" id="guardar-fecha"></label>
+      <p class="aviso" id="error-guardar" role="alert" hidden></p>
+      <div class="acciones-dialogo">
+        <button type="button" class="btn secundario" id="btn-guardar-cancelar">Cancelar</button>
+        <button type="submit" class="btn primario" id="btn-guardar-confirmar" value="guardar">Guardar</button>
+      </div>
+    </form>
+  </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

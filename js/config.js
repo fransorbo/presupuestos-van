@@ -95,6 +95,10 @@ export const DEFAULT_CONFIG = {
   // Ajustes por chofer. Por ahora el selector no cambia el precio (todo en 0 y sin pantalla
   // de configuración). Cuando se definan, cada uno puede sumar un monto fijo, un monto por km
   // y/o un porcentaje sobre el precio de los km.
+  // Dirección del Apps Script que guarda los viajes en Google Sheets (ver apps-script/).
+  // Se carga en Configuración: no va en el código porque el repositorio es público.
+  sheetUrl: '',
+
   choferes: {
     cristian: { nombre: 'Cristian', fijoUSD: 0, porKmUSD: 0, porcentaje: 0 }, // PENDIENTE
     marcelo: { nombre: 'Marcelo', fijoUSD: 0, porKmUSD: 0, porcentaje: 0 }, // PENDIENTE

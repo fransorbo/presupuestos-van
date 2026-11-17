@@ -302,3 +302,19 @@ label.btn { -webkit-user-select: none; user-select: none; }
 .gastos-ganancia strong { color: var(--acento); font-size: 17px; }
 .gastos strong.negativo { color: var(--peligro); }
 .gastos-ayuda { margin: -6px 0 14px; }
+
+/* ---------- botón Nuevo y guardado en Sheets ---------- */
+.btn-nuevo-arriba {
+  border: 0; border-radius: 999px; padding: 6px 14px; min-height: 34px;
+  background: var(--acento-suave); color: var(--acento);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.btn-nuevo-arriba:active { transform: scale(0.97); }
+.dialogo {
+  width: min(92vw, 420px); padding: 20px; border: 0; border-radius: var(--radio);
+  background: var(--card); color: var(--texto); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+.dialogo::backdrop { background: rgba(0, 0, 0, 0.45); }
+.dialogo h2 { margin: 0 0 6px; font-size: 18px; }
+.acciones-dialogo { display: flex; gap: 10px; margin-top: 8px; }
+.acciones-dialogo .btn { margin-top: 0; flex: 1; }
