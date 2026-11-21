@@ -42,6 +42,7 @@ function escribir(clave, valor) {
  * v1 → v2: cambiaron el precio por km (5 → 1 USD), el punto A (ahora hay A y D) y la plantilla.
  * v2 → v3: el tipo de cambio pasa a 1550 (ahora se cambia solo en Configuración) y se saca el redondeo automático.
  * v3 → v4: el redondeo en pesos pasa a $ 10.000.
+ * v4 → v5: pasan a ser 4 tarifas fijas (se suman las vueltas desde el aeropuerto); se conservan los precios cargados.
  */
 export function migrar(guardado) {
   if (!esObjeto(guardado)) return guardado;
@@ -58,6 +59,10 @@ export function migrar(guardado) {
   }
   if ((g.version ?? CONFIG_VERSION) < 4) {
     if (esObjeto(g.redondeo)) delete g.redondeo.multiploARS;
+  }
+  if ((g.version ?? CONFIG_VERSION) < 5 && Array.isArray(g.tarifasFijas)) {
+    const precios = Object.fromEntries(g.tarifasFijas.filter((t) => t && typeof t.usd === 'number' && Number.isFinite(t.usd)).map((t) => [t.id, t.usd]));
+    g.tarifasFijas = DEFAULT_CONFIG.tarifasFijas.map((t) => ({ ...clonar(t), usd: precios[t.id] ?? t.usd }));
   }
   g.version = CONFIG_VERSION;
   return g;

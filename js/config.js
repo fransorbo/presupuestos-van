@@ -6,7 +6,7 @@
 // Si cambia un valor por defecto que también tiene que cambiar en los celulares que ya
 // guardaron su configuración, subir CONFIG_VERSION y agregar la migración en storage.js.
 
-export const CONFIG_VERSION = 4;
+export const CONFIG_VERSION = 5;
 
 export const DEFAULT_CONFIG = {
   version: CONFIG_VERSION,
@@ -30,10 +30,12 @@ export const DEFAULT_CONFIG = {
   },
 
   // Tarifas fijas: el total es siempre este monto en USD, sin sumar nada.
+  // `destino`: se usa si no se escribe la dejada. `origen`: se usa si no se escribe la recogida.
   tarifasFijas: [
-    { id: 'hotel-ezeiza', corto: 'Hotel → Ezeiza', nombre: 'Hotel CABA → Aeropuerto Ezeiza', destino: 'Aeropuerto Internacional Ministro Pistarini (Ezeiza)', usd: 100 },
-    { id: 'hotel-aeroparque', corto: 'Hotel → Aeroparque', nombre: 'Hotel CABA → Aeroparque', destino: 'Aeroparque Jorge Newbery', usd: 80 },
-
+    { id: 'hotel-ezeiza', corto: 'Hotel → EZE', nombre: 'Hotel CABA → Aeropuerto Ezeiza', destino: 'Aeropuerto Internacional Ministro Pistarini (Ezeiza)', usd: 100 },
+    { id: 'ezeiza-hotel', corto: 'EZE → Hotel', nombre: 'Aeropuerto Ezeiza → Hotel CABA', origen: 'Aeropuerto Internacional Ministro Pistarini (Ezeiza)', usd: 110 },
+    { id: 'hotel-aeroparque', corto: 'Hotel → AEP', nombre: 'Hotel CABA → Aeroparque', destino: 'Aeroparque Jorge Newbery', usd: 80 },
+    { id: 'aeroparque-hotel', corto: 'AEP → Hotel', nombre: 'Aeroparque → Hotel CABA', origen: 'Aeroparque Jorge Newbery', usd: 90 },
   ],
 
   // Viajes por agencia: el presupuesto no cambia, pero la agencia se queda con este %.

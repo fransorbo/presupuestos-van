@@ -88,8 +88,8 @@ export function textoDesglose(resultado) {
 export function textoWhatsApp({ plantilla, viaje, resultado, incluirDesglose, config }) {
   // Los atajos (EZE, AEP) se muestran con el nombre completo
   const paradas = (viaje.paradas || []).map(expandirAlias).filter(Boolean);
-  const origen = expandirAlias(viaje.origen);
-  // En las tarifas fijas, si no se escribió la dejada, se usa el aeropuerto de la tarifa
+  // En las tarifas fijas, si no se escribió la recogida o la dejada, se usa el aeropuerto de la tarifa
+  const origen = expandirAlias(viaje.origen) || resultado.tarifaFija?.origen || '';
   const destino = expandirAlias(viaje.destino) || resultado.tarifaFija?.destino || '';
   const recorrido = [origen, ...paradas, destino].filter(Boolean).join(' → ');
   const pax = Number(viaje.pasajeros) > 0 ? String(Math.round(Number(viaje.pasajeros))) : '';

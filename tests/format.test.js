@@ -110,6 +110,14 @@ test('WhatsApp: tarifa fija en USD, sin pesos, con el aeropuerto como destino', 
   verdadero(t.includes('15 minutos'), 'la recogida es en el hotel');
 });
 
+test('WhatsApp: vuelta desde el aeropuerto sin recogida escrita usa el aeropuerto y la espera de 1 hora', () => {
+  const v = { origen: '', destino: 'Hotel de prueba, CABA', tipoViaje: 'aeroparque-hotel', moneda: 'USD' };
+  const t = mensaje(v, C, true);
+  verdadero(t.includes('Recorrido: Aeroparque Jorge Newbery → Hotel de prueba, CABA'), t);
+  verdadero(t.includes('*Total: USD 90,00*'), t);
+  verdadero(t.includes('1 hora'), t);
+});
+
 test('WhatsApp: el viaje por agencia no cambia el mensaje ni menciona la comisión', () => {
   const t = mensaje({ ...viaje, porAgencia: true }, C, true);
   igual(t, mensaje(viaje, C, true));

@@ -143,6 +143,8 @@ test('tarifas fijas: hotel → Ezeiza USD 100 y hotel → Aeroparque USD 80, sie
   const aep = calcular({ ...extras, tipoViaje: 'hotel-aeroparque' }, c);
   igual(aep.total, 80);
   igual(aep.lineas.map((l) => l.id), ['fija']);
+  igual(calcular({ ...extras, tipoViaje: 'ezeiza-hotel' }, c).total, 110);
+  igual(calcular({ ...extras, tipoViaje: 'aeroparque-hotel' }, c).total, 90);
 });
 
 test('tarifa fija: el mínimo no se aplica aunque el tipo de cambio baje', () => {

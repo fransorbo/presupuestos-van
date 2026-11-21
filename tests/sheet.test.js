@@ -47,6 +47,11 @@ test('Sheet: sin nombre ni fecha quedan vacíos; tarifa fija en USD usa el aerop
   igual(f.Chofer, 'Cristian');
   igual(f.Agencia, 'No');
   igual(f['Comisión agencia ($)'], '');
+  const vuelta = { tipoViaje: 'ezeiza-hotel', origen: '', destino: 'Hotel de prueba', paradas: [] };
+  const fv = filaSheet(vuelta, calcular(vuelta, def()), def(), { creado });
+  igual(fv.Recogida, 'Aeropuerto Internacional Ministro Pistarini (Ezeiza)');
+  igual(fv.Dejada, 'Hotel de prueba');
+  igual(fv.Total, 110);
 });
 
 test('Sheet: dirección del script', () => {

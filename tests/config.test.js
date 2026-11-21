@@ -68,7 +68,7 @@ test('valores nuevos por defecto', () => {
   igual(DEFAULT_CONFIG.precioKmUSD, 1);
   igual(DEFAULT_CONFIG.precioMinimo, { monto: 90000, moneda: 'ARS' });
   igual(DEFAULT_CONFIG.agenciaPorcentaje, 20);
-  igual(DEFAULT_CONFIG.tarifasFijas.map((t) => t.usd), [100, 80]);
+  igual(DEFAULT_CONFIG.tarifasFijas.map((t) => [t.corto, t.usd]), [['Hotel → EZE', 100], ['EZE → Hotel', 110], ['Hotel → AEP', 80], ['AEP → Hotel', 90]]);
   verdadero(DEFAULT_CONFIG.puntoA.startsWith('Chaco 2625, Valentín Alsina'));
   verdadero(DEFAULT_CONFIG.puntoD.startsWith('Carpe Diem Art, Gdor. Carlos Tejedor 627'));
 });
@@ -80,7 +80,7 @@ test('migración v1 → v2: toma el precio por km, el punto A y la plantilla nue
   igual(r.puntoA, DEFAULT_CONFIG.puntoA);
   igual(r.plantillaWhatsApp, DEFAULT_CONFIG.plantillaWhatsApp);
   igual(r.countryPorcentaje, 8);
-  igual(r.version, 4);
+  igual(r.version, 5);
   // Una configuración actual guardada no se toca
   const v3 = combinar(DEFAULT_CONFIG, migrar({ ...r, precioKmUSD: 1.5, tipoCambio: 1600 }));
   igual(v3.precioKmUSD, 1.5);
@@ -101,5 +101,20 @@ test('migración v3 → v4: el redondeo en pesos pasa a $ 10.000 y el de USD se 
   const v3 = { version: 3, redondeo: { multiploUSD: 10, multiploARS: 1000 } };
   const r = combinar(DEFAULT_CONFIG, migrar(v3));
   igual(r.redondeo, { multiploUSD: 10, multiploARS: 10000 });
-  igual(r.version, 4);
+  igual(r.version, 5);
+});
+
+test('migración v4 → v5: 4 tarifas fijas, conservando los precios que ya estaban cargados', () => {
+  const v4 = { version: 4, tarifasFijas: [
+    { id: 'hotel-ezeiza', corto: 'Hotel → Ezeiza', nombre: 'x', destino: 'y', usd: 105 },
+    { id: 'hotel-aeroparque', corto: 'Hotel → Aeroparque', nombre: 'x', destino: 'y', usd: 85 },
+  ] };
+  const r = combinar(DEFAULT_CONFIG, migrar(v4));
+  igual(r.tarifasFijas.map((t) => [t.id, t.corto, t.usd]), [
+    ['hotel-ezeiza', 'Hotel → EZE', 105],
+    ['ezeiza-hotel', 'EZE → Hotel', 110],
+    ['hotel-aeroparque', 'Hotel → AEP', 85],
+    ['aeroparque-hotel', 'AEP → Hotel', 90],
+  ]);
+  igual(r.version, 5);
 });

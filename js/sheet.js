@@ -25,7 +25,7 @@ export function filaSheet(viaje, r, config, { persona = '', fecha = '', creado =
     Persona: String(persona || '').trim(),
     Fecha: fecha || '',
     Total: r.moneda === 'ARS' ? redondear(r.total) : redondear(r.total, 2),
-    Recogida: expandirAlias(viaje.origen || '').trim(),
+    Recogida: (expandirAlias(viaje.origen || '') || r.tarifaFija?.origen || '').trim(),
     Dejada: destino.trim(),
     Moneda: r.moneda === 'ARS' ? 'Pesos' : 'USD',
     'Total USD': redondear(r.totalUSD, 2),

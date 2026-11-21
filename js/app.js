@@ -7,7 +7,7 @@ import { cargarConfig, guardarConfig, restablecerConfig, cargarViaje, guardarVia
 import { puntosRuta, calcularKmRuta, ErrorKm } from './distancias.js';
 import { filaSheet, enviarAlSheet, esUrlSheet } from './sheet.js';
 
-export const VERSION_APP = '1.6.0';
+export const VERSION_APP = '1.7.0';
 
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];
@@ -22,7 +22,7 @@ function viajeNuevo(anterior = {}) {
     destino: '',
     paradas: [],
     tipoViaje: 'km',
-    porAgencia: false,
+    porAgencia: true, // cada viaje nuevo arranca como viaje por agencia
     modoTramos: anterior.modoTramos ?? false,
     kmTotales: '',
     tramos: ['', '', ''],
@@ -79,7 +79,7 @@ function pintarTiposViaje() {
     b.dataset.valor = t.id;
     b.innerHTML = '<span></span><small></small>';
     $('span', b).textContent = t.corto || t.nombre;
-    $('small', b).textContent = `USD ${formatNumero(t.usd, 0, 2)} fijo`;
+    $('small', b).textContent = `USD ${formatNumero(t.usd, 0, 2)}`;
     seg.append(b);
   }
   if (viaje.tipoViaje !== 'km' && !tarifaFija(viaje, config)) viaje.tipoViaje = 'km';
@@ -154,8 +154,12 @@ function actualizar() {
   $('#resumen-datos').textContent = [fechaCorta, formatHora(viaje.hora), pax ? `${Math.round(pax)} pax` : ''].filter(Boolean).join(' · ');
   const notaFija = $('#nota-tarifa-fija');
   notaFija.hidden = !fija;
-  if (fija) notaFija.textContent = `Precio cerrado: USD ${formatNumero(fija.usd, 2, 2)}. No se suman km, peajes, extras ni recargos. Si dejás vacía la dejada, el mensaje dice "${fija.destino}".`;
-  $('[data-v="destino"]').placeholder = fija ? fija.destino : 'Dirección de dejada (o EZE / AEP)';
+  if (fija) {
+    const vacio = fija.origen ? `la recogida, el mensaje dice "${fija.origen}"` : `la dejada, el mensaje dice "${fija.destino}"`;
+    notaFija.textContent = `Precio cerrado: USD ${formatNumero(fija.usd, 2, 2)}. No se suman km, peajes, extras ni recargos. Si dejás vacía ${vacio}.`;
+  }
+  $('[data-v="origen"]').placeholder = fija?.origen || 'Dirección de recogida (o EZE / AEP)';
+  $('[data-v="destino"]').placeholder = fija?.destino || (fija ? 'Hotel' : 'Dirección de dejada (o EZE / AEP)');
 
   // Espera incluida según la recogida
   const ayudaEspera = $('#ayuda-espera-incluida');
@@ -412,9 +416,11 @@ async function calcularKm() {
   if (btn.disabled) return;
   let puntos;
   try {
-    // En una tarifa fija sin dejada escrita, se usa el aeropuerto de la tarifa
-    const destino = viaje.destino.trim() || tarifaFija(viaje, config)?.destino || '';
-    puntos = puntosRuta({ puntoA: config.puntoA, puntoD: config.puntoD, ...viaje, destino });
+    // En una tarifa fija sin recogida o dejada escrita, se usa el aeropuerto de la tarifa
+    const fija = tarifaFija(viaje, config);
+    const origen = viaje.origen.trim() || fija?.origen || '';
+    const destino = viaje.destino.trim() || fija?.destino || '';
+    puntos = puntosRuta({ puntoA: config.puntoA, puntoD: config.puntoD, ...viaje, origen, destino });
   } catch (e) {
     mostrarResultadoKm('error', (c) => c.append(parrafo(e.message)));
     return;
@@ -533,8 +539,10 @@ const ETIQUETAS = {
   precioKmUSD: 'Precio por km',
   'precioMinimo.monto': 'Precio mínimo',
   'precioMinimo.moneda': 'Precio mínimo: moneda',
-  'tarifasFijas.0.usd': 'Tarifa fija Hotel → Ezeiza',
-  'tarifasFijas.1.usd': 'Tarifa fija Hotel → Aeroparque',
+  'tarifasFijas.0.usd': 'Tarifa fija Hotel → EZE',
+  'tarifasFijas.1.usd': 'Tarifa fija EZE → Hotel',
+  'tarifasFijas.2.usd': 'Tarifa fija Hotel → AEP',
+  'tarifasFijas.3.usd': 'Tarifa fija AEP → Hotel',
   agenciaPorcentaje: 'Comisión de agencia',
   'costos.choferHorasCada100Km': 'Gastos: horas de Marcelo',
   'costos.choferPrecioHora': 'Gastos: precio hora de Marcelo',
